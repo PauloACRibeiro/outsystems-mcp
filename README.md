@@ -32,13 +32,3 @@ Step 5: when I tell you, set the URL `https://mcp-test.datap-dev-us-east-1-01.de
 Step 6: tell me the OAuth flow opens automatically on the next ODC tool call.
 ```
 
-## What's in the repo
-
-```
-.claude-plugin/        Claude Code plugin + marketplace manifests
-skills/odc/SKILL.md    Canonical agent skill (recipe + tool reference)
-kiro/odc/              Kiro Power assets
-  POWER.md
-  mcp.json             sentinel URL — agent rewrites it on first use
-  steering/skill.md    symlink → ../../../skills/odc/SKILL.md
-```
