@@ -1,16 +1,16 @@
 {
-  "name": "odc-mcp",
+  "name": "outsystems",
   "metadata": {
-    "description": "OutSystems Developer Cloud — remote MCP plugin for Claude Code"
+    "description": "OutSystems remote MCP plugin for Claude Code"
   },
   "owner": {
     "name": "OutSystems AI Platform"
   },
   "plugins": [
     {
-      "name": "odc-mcp",
-      "description": "OutSystems Developer Cloud — remote MCP integration. Authenticate once, then edit, publish, deploy, and search OutSystems apps from your AI assistant.",
-      "version": "0.4.0",
+      "name": "outsystems",
+      "description": "Edit, publish, deploy, and search OutSystems apps from your AI assistant.",
+      "version": "0.5.0",
       "author": {
         "name": "OutSystems AI Platform"
       },

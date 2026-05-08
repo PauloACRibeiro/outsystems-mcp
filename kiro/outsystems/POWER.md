@@ -1,6 +1,6 @@
 ---
-name: "odc-mcp"
-displayName: "OutSystems Developer Cloud (ODC) — remote MCP"
+name: "outsystems"
+displayName: "OutSystems Developer Cloud - remote MCP"
 description: "Drive OutSystems Developer Cloud from Kiro over the remote MCP HTTP transport: edit apps, publish, deploy, run impact analysis, search tenant elements, manage external libraries."
 keywords: [outsystems, odc, low-code, oml, deployment, mcp, remote-mcp]
 author: "OutSystems AI Platform"
@@ -29,7 +29,7 @@ This Power ships with a **sentinel** URL — `https://mcp-test.../UNCONFIGURED-T
 
 Two ways to install the Power into Kiro (both work for an internal/private repo, assuming you have GitHub access):
 
-**Option A — clone locally, point Kiro at the local copy.** Most deterministic; doesn't depend on Kiro shelling out to git.
+**Option A - clone locally, point Kiro at the local copy.** Most deterministic; doesn't depend on Kiro shelling out to git.
 
 ```bash
 # 1. Clone the toolkit somewhere (keep this clone — Kiro reads from it)
@@ -37,37 +37,37 @@ git clone https://github.com/OutSystems/ase-mcp ~/git/ase-mcp
 
 # 2. Drop a registry pointer that references the local clone
 mkdir -p ~/.kiro/powers/registries
-cat > ~/.kiro/powers/registries/outsystems-odc.json <<EOF
+cat > ~/.kiro/powers/registries/outsystems.json <<EOF
 {
   "name": "OutSystems Developer Cloud",
   "type": "local",
   "powers": [{
-    "name": "odc-mcp",
-    "displayName": "OutSystems Developer Cloud (ODC) — remote MCP",
+    "name": "outsystems",
+    "displayName": "OutSystems Developer Cloud - remote MCP",
     "description": "Edit, publish, deploy OutSystems apps from your AI assistant.",
-    "source": {"type": "local", "path": "$HOME/git/ase-mcp/kiro/odc"},
+    "source": {"type": "local", "path": "$HOME/git/ase-mcp/kiro/outsystems"},
     "autoInstall": true
   }]
 }
 EOF
 ```
 
-**Option B — let Kiro clone the repo itself.** Simpler if your `git` credentials are configured (HTTPS via `gh auth setup-git` or SSH agent).
+**Option B - let Kiro clone the repo itself.** Simpler if your `git` credentials are configured (HTTPS via `gh auth setup-git` or SSH agent).
 
 ```bash
 mkdir -p ~/.kiro/powers/registries
-cat > ~/.kiro/powers/registries/outsystems-odc.json <<EOF
+cat > ~/.kiro/powers/registries/outsystems.json <<EOF
 {
   "name": "OutSystems Developer Cloud",
   "type": "local",
   "powers": [{
-    "name": "odc-mcp",
-    "displayName": "OutSystems Developer Cloud (ODC) — remote MCP",
+    "name": "outsystems",
+    "displayName": "OutSystems Developer Cloud - remote MCP",
     "description": "Edit, publish, deploy OutSystems apps from your AI assistant.",
     "source": {
       "type": "repo",
       "repositoryCloneUrl": "https://github.com/OutSystems/ase-mcp",
-      "pathInRepo": "kiro/odc",
+      "pathInRepo": "kiro/outsystems",
       "repositoryBranch": "main"
     },
     "autoInstall": true
@@ -76,13 +76,13 @@ cat > ~/.kiro/powers/registries/outsystems-odc.json <<EOF
 EOF
 ```
 
-Restart Kiro after dropping the registry file. On startup Kiro auto-installs the Power: it copies `POWER.md`, `mcp.json`, and `steering/skill.md` into `~/.kiro/powers/installed/odc-mcp/` and adds an entry to `~/.kiro/settings/mcp.json` under `powers.mcpServers["power-odc-mcp-odc"]`. The Power appears in Kiro's Powers UI.
+Restart Kiro after dropping the registry file. On startup Kiro auto-installs the Power: it copies `POWER.md`, `mcp.json`, and `steering/skill.md` into `~/.kiro/powers/installed/outsystems/` and adds an entry to `~/.kiro/settings/mcp.json` under `powers.mcpServers["power-outsystems-outsystems"]`. The Power appears in Kiro's Powers UI.
 
-Then open Kiro Chat and ask it for anything OutSystems-related — the steering content takes over and the agent walks you through the tenant prompt + OAuth on first use.
+Then open Kiro Chat and ask it for anything OutSystems-related; the steering content takes over and the agent walks you through the tenant prompt + OAuth on first use.
 
 ### Switching tenants
 
-Just tell Kiro Chat "switch ODC to a different tenant" (or similar). The agent will repeat the tenant prompt and update the URL in both `~/.kiro/powers/installed/odc-mcp/mcp.json` and `~/.kiro/settings/mcp.json`. Kiro's file watcher reloads MCP automatically.
+Just tell Kiro Chat "switch OutSystems to a different tenant" (or similar). The agent will repeat the tenant prompt and update the URL in both `~/.kiro/powers/installed/outsystems/mcp.json` and `~/.kiro/settings/mcp.json`. Kiro's file watcher reloads MCP automatically.
 
 ## Common Workflows
 
@@ -129,21 +129,23 @@ Workflows below show MCP tool form. Identity (tenant + user) is derived from the
 
 ### MCP server unreachable
 
-**Symptom:** Kiro reports the `odc` server as not configured / not connected, or tools return errors mentioning `UNCONFIGURED-TENANT`.
+**Symptom:** Kiro reports the `outsystems` server as not configured / not connected, or tools return errors mentioning `UNCONFIGURED-TENANT`.
 
 **Solutions:**
-1. Have you completed the first-use tenant prompt? Open Kiro Chat and ask anything ODC-related — the agent will notice the unconfigured state and walk you through it.
-2. Verify the install: `jq '.installedPowers[] | select(.name=="odc-mcp")' ~/.kiro/powers/installed.json` should return the entry, and `jq '.powers.mcpServers."power-odc-mcp-odc"' ~/.kiro/settings/mcp.json` should return an object with a `https://mcp-test.<region>.<cluster>.outsystemscloudrd.net/<your-tenant>/mcp` URL.
-3. If the URL still says `UNCONFIGURED-TENANT`, the tenant prompt was skipped or interrupted. Tell Kiro Chat "set up ODC again" and complete the flow.
-4. Verify network reachability: `curl -I "<URL-from-settings>"` should return an HTTP response (likely 401 without a bearer — that's expected and means routing works).
+1. Have you completed the first-use tenant prompt? Open Kiro Chat and ask anything OutSystems-related; the agent will notice the unconfigured state and walk you through it.
+2. Verify the install: `jq '.installedPowers[] | select(.name=="outsystems")' ~/.kiro/powers/installed.json` should return the entry, and `jq '.powers.mcpServers."power-outsystems-outsystems"' ~/.kiro/settings/mcp.json` should return an object with a `https://mcp-test.<region>.<cluster>.outsystemscloudrd.net/<your-tenant>/mcp` URL.
+3. If the URL still says `UNCONFIGURED-TENANT`, the tenant prompt was skipped or interrupted. Tell Kiro Chat "set up OutSystems again" and complete the flow.
+4. Verify network reachability: `curl -I "<URL-from-settings>"` should return an HTTP response (likely 401 without a bearer; that's expected and means routing works).
 
 ### OAuth doesn't open / callback fails
 
-**Symptom:** Kiro hangs on first tool call; no browser tab opens, or the browser shows a redirect-uri mismatch.
+**Symptom:** Browser tab doesn't open, OR the browser shows "site can't be reached" / a redirect-uri mismatch on the `localhost:<port>/callback` page.
 
 **Solutions:**
-1. Kiro discovers OAuth from the server's `WWW-Authenticate` 401 challenge and runs Dynamic Client Registration (RFC 7591) against the AS proxy on first connect; it picks an ephemeral local callback port internally. If DCR fails, the `as-proxy` pod logs will show the registration attempt — start there.
-2. Wipe any stale Kiro-side OAuth state and retry: remove the `odc` server from Kiro's MCP servers list (Kiro UI → MCP Servers → odc → Remove), restart Kiro, re-add the power. Kiro will re-register with a fresh `client_id` and re-issue tokens.
+1. **Browser didn't open at all:** ask the agent to call `mcp__outsystems__authenticate` again; it returns the auth URL. Share the URL with the user to open manually.
+2. **Callback page shows "site can't be reached" (remote session):** the auth code IS in the URL bar. Copy the full URL and ask the agent to call `mcp__outsystems__complete_authentication { callback_url: "<that URL>" }`.
+3. **DCR or proxy errors:** the `as-proxy` pod logs in the cluster show the registration attempt. File against `OutSystems/mcp-server-remote`.
+4. **Last resort:** remove and re-add the `outsystems` server in Kiro's MCP UI to wipe stale OAuth state, then ask Kiro Chat to redo the first-use steering flow.
 
 ### Tool errors
 
@@ -162,11 +164,11 @@ The Power's installed state (created by Kiro's auto-install when it processes th
 
 | Path | Purpose |
 |---|---|
-| `~/.kiro/powers/registries/outsystems-odc.json` | LocalRegistrySchema — points at the Power source. |
-| `~/.kiro/powers/installed.json` | Lists `odc-mcp` as installed. |
-| `~/.kiro/powers/installed/odc-mcp/POWER.md` | This file (copied from source). |
-| `~/.kiro/powers/installed/odc-mcp/mcp.json` | Per-power MCP config. The agent updates the URL on first use; Kiro then namespaces the entry into `settings/mcp.json` as `power-odc-mcp-odc`. |
-| `~/.kiro/powers/installed/odc-mcp/steering/skill.md` | Agent-facing skill content; loads into the chat agent's context whenever the Power is active. Drives the tenant prompt + MCP wiring. |
-| `~/.kiro/settings/mcp.json` | Kiro's MCP loader file. The Power's namespaced entry lives at `powers.mcpServers["power-odc-mcp-odc"]`. The agent updates the URL here to match `installed/odc-mcp/mcp.json`. Top-level `mcpServers` is preserved (even empty) — Kiro's user-level loader requires it. |
+| `~/.kiro/powers/registries/outsystems.json` | LocalRegistrySchema; points at the Power source. |
+| `~/.kiro/powers/installed.json` | Lists `outsystems` as installed. |
+| `~/.kiro/powers/installed/outsystems/POWER.md` | This file (copied from source). |
+| `~/.kiro/powers/installed/outsystems/mcp.json` | Per-power MCP config. The agent updates the URL on first use; Kiro then namespaces the entry into `settings/mcp.json` as `power-outsystems-outsystems`. |
+| `~/.kiro/powers/installed/outsystems/steering/skill.md` | Agent-facing skill content; loads into the chat agent's context whenever the Power is active. Drives the tenant prompt + MCP wiring + OAuth. |
+| `~/.kiro/settings/mcp.json` | Kiro's MCP loader file. The Power's namespaced entry lives at `powers.mcpServers["power-outsystems-outsystems"]`. The agent updates the URL here to match `installed/outsystems/mcp.json`. Top-level `mcpServers` is preserved (even empty); Kiro's user-level loader requires it. |
 
 Schemas verified against `/opt/kiro/resources/app/extensions/kiro.kiro-agent/dist/extension.js` (Kiro 0.11.133, search for `PowerDefinitionV2Schema`, `LocalRegistrySchema`, `InstalledPowersFileSchema`, `MCPOptionsSchema`). Kiro's `MCPOptionsSchema` accepts `command/args/env/cwd/url/headers/type/timeout/disabled/autoApprove/disabledTools` — **no `oauth` block**. OAuth is discovered from the 401 challenge and Kiro handles DCR internally with an ephemeral callback port.

@@ -1,1 +1,0 @@
-../../../skills/odc/SKILL.md
