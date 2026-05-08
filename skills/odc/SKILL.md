@@ -75,8 +75,8 @@ Each `context_*` row also carries `isReferenced` (true ⇒ inherited from a refe
 - `auth_status` — returns the validated JWT claims `{logged_in, tenant_id, user_id, claims}`. Useful for confirming the bearer the harness sent before doing anything else.
 
 ### Apps
-- `app_list {search?, limit?, offset?}` — list apps; `search` is a case-insensitive substring.
-- `app_info {key}` — app details.
+- `app_list {search?, limit?, offset?, detailed?}` — list apps; `search` is a case-insensitive substring. Rows are **compact by default**: `assetKey`, `name`, `assetType`, `revision`, `revisionDateTime`, `isExternal`. To get `description`, `modelDigest`, and the portfolio/revisionUser/template UUIDs, pass `detailed: true` — or call `app_info` for a single asset.
+- `app_info {key}` — app details (full Asset shape).
 - `app_revisions {key}` — revision history.
 - `app_refs {key}` — what other modules this asset depends on (server fetches OML to a per-call temp file, computes refs, deletes the file before returning). Cheap dependency check before edit/deploy.
 
