@@ -14,7 +14,7 @@ Before using any `odc` tool, the MCP server has to be registered against the use
 1. **Ask the user for their OutSystems tenant hostname.** Format: `<short>-<region>-<index>.outsystems.dev` (e.g. `eng-stage-us-01.outsystems.dev`). Prompt verbatim:
    > "Which OutSystems tenant should I connect to? It's the host portion of your ODC URL — typically something like `eng-stage-us-01.outsystems.dev`."
 2. **Validate** the answer matches `^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`. If it doesn't, ask again with an example. Do NOT accept URLs, paths, or anything that looks like more than a bare hostname.
-3. **Construct the MCP URL**: `https://mcp-test.datap-dev-us-east-1-01.dev-06.stamp.outsystemscloudrd.net/<TENANT>/mcp`.
+3. **Construct the MCP URL**: `https://datap-dev-us-east-1-01.dev-06.stamp.outsystemscloudrd.net/<TENANT>/mcp`.
 4. **Detect the host and register the server.** Try Claude Code first; fall back to Kiro:
    - **Claude Code** (`claude` CLI is on PATH): run
      ```
