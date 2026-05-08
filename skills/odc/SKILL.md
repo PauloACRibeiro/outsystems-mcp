@@ -41,10 +41,12 @@ If the user already has an `odc` MCP server registered but it's pointing at the 
 - Go straight to the task. No setup checks, no auth pre-flight — identity comes from the bearer the harness already negotiated.
 - OML stays server-side. There is no `app_download`. To inspect an app, use `app_refs` + `context_*` tools. To edit an app, use `mentor` (OML lives in the server-side mentor session, never crosses the wire as bytes).
 - If `env_key`, `app_key`, an asset key, or a `mentor_session_*` token is missing and you can't reliably resolve it, ask the user. Never guess.
+- There is no per-session "selected environment" on this transport — every environment-scoped tool takes `env_key` as a per-call argument.
 - Run independent tool calls in parallel when possible (e.g. once you have an app key, fetch info + per-type context lookups concurrently).
 - Errors carry a structured category in `data.category` (one of `AuthError`, `ValidationError`, `UpstreamError`, `InternalError`); upstream errors also include `data.upstream_status`. Use these for retry decisions, not the message text.
 - Long-running tools (`deploy_start`, `deploy_rollback`, `deploy_impact`, `publish_start`, `extlib_upload`, `extlib_publish`, `extlib_download_source`) return an operation/publication/analysis id immediately. Poll the matching `*_status` tool (`deploy_status`, `deploy_impact_status`, `publish_status`, `extlib_status`, `extlib_download_status`) until terminal — don't expect inline completion.
 - `mentor` is the exception: it streams per-step events as `notifications/progress` while the turn runs, and returns the summary on the same call.
+- The catalog and per-tool semantics live in `tools/list`. Read each tool's `description` and `inputSchema` there rather than relying on duplicated docs — defaults can change server-side, and stale duplicates drift.
 
 ## Names
 
@@ -69,87 +71,18 @@ Each `context_*` row also carries `isReferenced` (true ⇒ inherited from a refe
 - Sessions auto-GC after 30 min idle. Resuming after GC transparently re-downloads the OML (sticky-miss recovery) — same `mentor_session_id` and conversation continue.
 - To call `publish_start` on the edited OML, you need both `mentor_session_id` and `mentor_session_token` from the most recent turn.
 
-## Tools
-
-### Identity
-- `auth_status` — returns the validated JWT claims `{logged_in, tenant_id, user_id, claims}`. Useful for confirming the bearer the harness sent before doing anything else.
-
-### Apps
-- `app_list {search?, limit?, offset?}` — list apps; `search` is a case-insensitive substring.
-- `app_info {key}` — app details.
-- `app_revisions {key}` — revision history.
-- `app_refs {key}` — what other modules this asset depends on (server fetches OML to a per-call temp file, computes refs, deletes the file before returning). Cheap dependency check before edit/deploy.
-
-### Deployments
-
-`deploy_start` and `deploy_rollback` always run with `no_wait=true` on this transport — they return an operation key immediately; poll `deploy_status` to terminal.
-
-- `deploy_start {asset_key, env_key, build_key?, revision?, from_env?, operation?}` — promote a build to `env_key`. Cross-env: pass `from_env` to source the build from a different env (latest finished `Release` build wins). To pin an exact build, pass both `build_key` and `revision`. `operation` is `"Deploy"` (default), `"Undeploy"`, or `"ApplyConfigs"`. **HTTP-specific:** when `build_key`+`revision` are both omitted and `operation != "Undeploy"`, `from_env` is required (the target `env_key` is not used as a source).
-- `deploy_rollback {asset_key, env_key}` — rollback to previous deployed version in `env_key`.
-- `deploy_status {operation_key}` — poll a deploy operation until terminal.
-- `deploy_list {asset_key?, env_key?}` — list deploy operations, optionally filtered.
-- `deploy_messages {operation_key}` — messages for a deploy operation.
-- `deploy_logs {env_key}` — recent deployments in `env_key`.
-- `deploy_impact {key, delete?, env_key?}` — start an impact analysis. `delete=false` (default) needs `env_key`; `delete=true` runs deletion-impact and `env_key` is ignored. Returns an analysis id immediately; poll `deploy_impact_status`.
-- `deploy_impact_status {analysis_id, kind}` — poll the analysis. `kind` must be `"deployment"` or `"deletion"` and must match the call you made.
-
-### Publish
-
-`publish_start` runs no_wait on this transport. There is no `oml` argument — the OML comes from the mentor session.
-
-- `publish_start {mentor_session_id, mentor_session_token, env_key}` — upload the session's edited OML, build, and deploy to `env_key`. Returns `{publication_id}` immediately. The `app_key` is taken from the signed token, not from arguments.
-- `publish_status {publication_id}` — poll until terminal. Same response shape as a polled-to-completion publish.
-- `publish_logs {pub_key}` — publication messages. `pub_key` is the publication id, **not** the app key.
-
-### Mentor (edits + deep questions)
-- `mentor` — see "Mentor session round-trip" above for the args/response shapes.
-- For info about an app, prefer `context_*` tools — lightweight, structured, no OML download.
-- Only fall back to `mentor` for info queries when context genuinely can't answer (deep OML internals, logic flow traversal).
-- For edits, `mentor` is the only path.
-- Reuse the same session across follow-up turns within one task — the server-side OML and recent tool history stay loaded, which is cheaper and more coherent.
+**When to use `mentor` vs `context_*`:**
+- For *info* about an app, prefer `context_*` — lightweight, structured, no OML download. Only fall back to `mentor` when context can't answer (deep OML internals, logic flow traversal).
+- For *edits*, `mentor` is the only path.
+- Reuse the same session across follow-up turns in one task — the server-side OML and tool history stay loaded.
 - Start a fresh session (call without `mentor_session_*`) when: (a) mentor hallucinates entities/actions that don't exist; (b) you switch to an unrelated task on the same app; or (c) prior turns left the OML in a bad state.
-- If mentor refuses or returns an empty response, rephrase with concrete keys and a smaller scope before retrying.
+- If mentor refuses or returns empty, rephrase with concrete keys and a smaller scope before retrying.
 
-### Tenant elements (search and browse)
+## Context Service visibility (`owned_only` semantics)
 
-Every `context_*` tool accepts:
-- `app` — scope to one app (asset key UUID, or case-insensitive name substring; errors on 0 or >1 match). Omit for tenant-wide.
-- `limit` — max results per page (server default: 20).
-- `offset` — pagination start (default: 0). Responses include `pagination.nextPageOffset`.
+The Context Service (`context_*` tools) indexes by **visibility**, not ownership: an app-scoped query returns rows owned by the app **plus** rows inherited from referenced libraries (OutSystemsUI, Charts, OutSystemsMaps, etc.) — all carrying the visiting app's `assetKey`. Each row carries `isReferenced` (true ⇒ inherited) and `producerAssetKey` / `producerAssetName` so callers can group by producer.
 
-The seven typed tools (`context_entities`, `_actions`, `_screens`, `_structures`, `_roles`, `_themes`, `_connections`) also accept `owned_only` — defaults to `true` when `app` is set, `false` when querying tenant-wide. The Context Service indexes by visibility, not ownership: an app-scoped query returns rows owned by the app **plus** rows inherited from referenced libraries (OutSystemsUI, Charts, OutSystemsMaps, etc.) — all carrying the visiting app's `assetKey`. The handler distinguishes them via `isReferenced` and surfaces `producerAssetKey` / `producerAssetName` for inherited rows. Set `owned_only: false` to keep the inherited rows in the response (they remain tagged so callers can group by producer).
-
-- `context_search {query, search_type?, objects?, app?, limit?, offset?}` — search. `search_type` is `"semantic"` or omitted. `objects` is an array (e.g. `["Entities","Actions"]`).
-- `context_entities {app?, owned_only?, limit?, offset?}` — entities (data model).
-- `context_actions {app?, owned_only?, limit?, offset?}` — server/client actions.
-- `context_screens {app?, owned_only?, limit?, offset?}` — screens (UI surface).
-- `context_structures {app?, owned_only?, limit?, offset?}` — structures.
-- `context_roles {app?, owned_only?, limit?, offset?}` — security roles.
-- `context_themes {app?, owned_only?, limit?, offset?}` — themes.
-- `context_connections {app?, owned_only?, limit?, offset?}` — AI model connections.
-
-### Environments
-
-There is no per-session "selected environment" on this transport — every environment-scoped tool takes `env_key` as a per-call argument.
-
-- `env_list` — list environments in the tenant.
-- `env_info {env_key}` — details of one environment.
-- `env_apps {env_key, search?}` — deployed apps in `env_key`.
-- `env_app {env_key, key}` — deployed-app details.
-
-### External libraries (ELGS — generation, publish, lookup)
-
-`extlib_upload`, `extlib_publish`, and `extlib_download_source` run no_wait on this transport.
-
-- `extlib_upload {zip_b64, auto_publish?}` — base64-encoded zip bytes inline (decoded ≤ 50 MB; concurrent uploads gated per replica). `auto_publish=true` runs the operation through `Published` without a human review step. Returns an operation key immediately; poll `extlib_status`.
-- `extlib_publish {operation_key}` — approve a `ReadyForReview` op → `Publishing` → `Published`. Returns immediately; poll `extlib_status`.
-- `extlib_operations_list` — generation operations (publish jobs) in the tenant. Failed operations carry the upload `filename` even when the platform's `libraryName` is missing — useful for telling which library the failure was for.
-- `extlib_status {operation_key}` — status of one operation.
-- `extlib_contents {operation_key}` — extracted actions/structures (with GUID keys).
-- `extlib_logs {operation_key}` — validation messages.
-- `extlib_delete {operation_key}` — delete a generation operation.
-- `extlib_download_source {asset_key, revision}` — start a source-zip download. Returns an operation key immediately.
-- `extlib_download_status {operation_key, asset_key, revision}` — poll the download. When status is `ReadyForDownload`, the response carries a `fileUri` the harness fetches directly.
+The seven typed tools (`context_entities`, `_actions`, `_screens`, `_structures`, `_roles`, `_themes`, `_connections`) accept an `owned_only` parameter — defaults to `true` when `app` is set, `false` when querying tenant-wide. Set `owned_only: false` with `app` to keep inherited rows in the response.
 
 ## Workflows
 
