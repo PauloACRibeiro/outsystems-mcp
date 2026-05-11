@@ -107,6 +107,9 @@ The seven typed tools (`context_entities`, `_actions`, `_screens`, `_structures`
 2. Poll `deploy_status {operation_key}` until terminal.
 3. On failure: `deploy_messages {operation_key}` for diagnostic messages.
 
+**Create and Edit an existing external library:**
+This requires the `externallibrary` skill. Read `externallibrary/SKILL.md` first.
+
 **Publish a new external library:**
 1. Build a .NET 8 lib with `[OSInterface(Name = "<UniqueName>")]` (reusing a name produces a new revision, not a fresh asset). `dotnet publish -c Release`, zip the `.dll` + `.deps.json` at the zip root (no nested folder). Base64-encode the zip.
 2. `extlib_upload {zip_b64: "<base64>", auto_publish: true}` → returns operation key.
