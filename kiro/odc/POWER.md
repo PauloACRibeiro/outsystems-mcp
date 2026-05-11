@@ -25,7 +25,7 @@ There is no CLI to install. There is no OML on disk. OML stays server-side; you 
 
 ### Installation
 
-This Power ships with a **sentinel** URL — `https://mcp-test.../UNCONFIGURED-TENANT/mcp`. The first time you ask Kiro Chat to do something with ODC, the agent will notice no working MCP connection, ask you for your tenant hostname, and patch the URL into Kiro's MCP configuration. No script, no shell command. Just install the Power and start chatting.
+This Power ships with a **sentinel** URL — `https://<stamp-domain>/UNCONFIGURED-TENANT/mcp`. The first time you ask Kiro Chat to do something with ODC, the agent will notice no working MCP connection, ask you for your tenant hostname, and patch the URL into Kiro's MCP configuration. No script, no shell command. Just install the Power and start chatting.
 
 Two ways to install the Power into Kiro (both work for an internal/private repo, assuming you have GitHub access):
 
@@ -133,7 +133,7 @@ Workflows below show MCP tool form. Identity (tenant + user) is derived from the
 
 **Solutions:**
 1. Have you completed the first-use tenant prompt? Open Kiro Chat and ask anything ODC-related — the agent will notice the unconfigured state and walk you through it.
-2. Verify the install: `jq '.installedPowers[] | select(.name=="odc-mcp")' ~/.kiro/powers/installed.json` should return the entry, and `jq '.powers.mcpServers."power-odc-mcp-odc"' ~/.kiro/settings/mcp.json` should return an object with a `https://mcp-test.<region>.<cluster>.outsystemscloudrd.net/<your-tenant>/mcp` URL.
+2. Verify the install: `jq '.installedPowers[] | select(.name=="odc-mcp")' ~/.kiro/powers/installed.json` should return the entry, and `jq '.powers.mcpServers."power-odc-mcp-odc"' ~/.kiro/settings/mcp.json` should return an object with a `https://<stamp-domain>/<your-tenant>/mcp` URL.
 3. If the URL still says `UNCONFIGURED-TENANT`, the tenant prompt was skipped or interrupted. Tell Kiro Chat "set up ODC again" and complete the flow.
 4. Verify network reachability: `curl -I "<URL-from-settings>"` should return an HTTP response (likely 401 without a bearer — that's expected and means routing works).
 
