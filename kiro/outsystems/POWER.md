@@ -1,16 +1,16 @@
 ---
 name: "outsystems"
-displayName: "OutSystems Developer Cloud - remote MCP"
-description: "Drive OutSystems Developer Cloud from Kiro over the remote MCP HTTP transport: edit apps, publish, deploy, run impact analysis, search tenant elements, manage external libraries."
-keywords: [outsystems, odc, low-code, oml, deployment, mcp, remote-mcp]
+displayName: "OutSystems - MCP"
+description: "Drive OutSystems from Kiro over the MCP HTTP transport: edit apps, publish, deploy, search tenant elements, manage external libraries."
+keywords: [outsystems, low-code, oml, deployment, mcp]
 author: "OutSystems AI Platform"
 ---
 
-# OutSystems Developer Cloud (ODC) — remote MCP
+# OutSystems — MCP
 
 ## Overview
 
-ODC is a cloud-native low-code platform where apps are built from OML (OutSystems Model Language) — a binary format describing entities, screens, actions, and logic. This Power connects Kiro to the **ODC remote MCP server**: a hosted, multi-tenant HTTP transport that exposes the full ODC tool surface (`mentor`, `app_*`, `context_*`, `deploy_*`, `publish_*`, `extlib_*`, `env_*`).
+OutSystems is a cloud-native low-code platform where apps are built from OML (OutSystems Model Language) — a binary format describing entities, screens, actions, and logic. This Power connects Kiro to the **OutSystems MCP server**: a hosted, multi-tenant HTTP transport that exposes the full OutSystems tool surface (`mentor`, `app_*`, `context_*`, `deploy_*`, `publish_*`, `extlib_*`, `env_*`).
 
 There is no CLI to install. There is no OML on disk. OML stays server-side; you edit through the `mentor` session and ship via `publish_start`.
 
@@ -20,12 +20,12 @@ There is no CLI to install. There is no OML on disk. OML stays server-side; you 
 
 - Kiro 0.11.133 or newer.
 - A web browser on the same machine as Kiro (Kiro picks an ephemeral local port for the OAuth callback after Dynamic Client Registration).
-- An OutSystems tenant hostname (e.g. `eng-stage-us-01.outsystems.dev`).
+- An OutSystems tenant hostname (e.g. `mycompany.outsystems.dev`).
 - Network access to `*.outsystemscloudrd.net` (the proxy host).
 
 ### Installation
 
-This Power ships with a **sentinel** URL — `https://<stamp-domain>/UNCONFIGURED-TENANT/mcp`. The first time you ask Kiro Chat to do something with ODC, the agent will notice no working MCP connection, ask you for your tenant hostname, and patch the URL into Kiro's MCP configuration. No script, no shell command. Just install the Power and start chatting.
+This Power ships with a **sentinel** URL — `https://<stamp-domain>/UNCONFIGURED-TENANT/mcp`. The first time you ask Kiro Chat to do something with OutSystems, the agent will notice no working MCP connection, ask you for your tenant hostname, and patch the URL into Kiro's MCP configuration. No script, no shell command. Just install the Power and start chatting.
 
 Two ways to install the Power into Kiro (both work for an internal/private repo, assuming you have GitHub access):
 
@@ -39,11 +39,11 @@ git clone https://github.com/OutSystems/ase-mcp ~/git/ase-mcp
 mkdir -p ~/.kiro/powers/registries
 cat > ~/.kiro/powers/registries/outsystems.json <<EOF
 {
-  "name": "OutSystems Developer Cloud",
+  "name": "OutSystems",
   "type": "local",
   "powers": [{
     "name": "outsystems",
-    "displayName": "OutSystems Developer Cloud - remote MCP",
+    "displayName": "OutSystems - MCP",
     "description": "Edit, publish, deploy OutSystems apps from your AI assistant.",
     "source": {"type": "local", "path": "$HOME/git/ase-mcp/kiro/outsystems"},
     "autoInstall": true
@@ -58,11 +58,11 @@ EOF
 mkdir -p ~/.kiro/powers/registries
 cat > ~/.kiro/powers/registries/outsystems.json <<EOF
 {
-  "name": "OutSystems Developer Cloud",
+  "name": "OutSystems",
   "type": "local",
   "powers": [{
     "name": "outsystems",
-    "displayName": "OutSystems Developer Cloud - remote MCP",
+    "displayName": "OutSystems - MCP",
     "description": "Edit, publish, deploy OutSystems apps from your AI assistant.",
     "source": {
       "type": "repo",

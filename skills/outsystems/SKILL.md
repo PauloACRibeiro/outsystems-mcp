@@ -1,71 +1,83 @@
 ---
 name: outsystems
-description: "OutSystems Developer Cloud (ODC) over remote MCP. Edit apps, publish, deploy, run impact analysis, search tenant elements, manage external libraries. Use for ANY OutSystems task."
+description: "OutSystems over MCP. Edit apps, publish, deploy, search tenant elements, manage external libraries. Use for ANY OutSystems task."
 ---
 
-# OutSystems Developer Cloud (ODC) - Remote MCP
+# OutSystems - Remote MCP
 
-You are connected to ODC over the remote MCP HTTP transport. ODC is a cloud-native low-code platform where apps are built from OML (OutSystems Model Language), a binary format describing entities, screens, actions, and logic. Every tool call carries the harness's validated OAuth bearer; tenant + user identity are derived from the JWT, not from arguments.
+You are connected to OutSystems over the MCP HTTP transport. OutSystems is a cloud-native low-code platform where apps are built from OML (OutSystems Model Language), a binary format describing entities, screens, actions, and logic. Every tool call carries the harness's validated OAuth bearer; tenant + user identity are derived from the JWT, not from arguments.
 
 ## First use / setup
 
 If the `outsystems` MCP tools aren't visible in your toolset, or a call returns `tenant not configured` / connection errors, the MCP server hasn't been registered against the user's tenant. Do this once per machine:
 
-1. **Ask the user for their OutSystems tenant hostname.** Format: `<short>-<region>-<index>.outsystems.dev` (e.g. `eng-stage-us-01.outsystems.dev`). Prompt verbatim:
-   > "Which OutSystems tenant should I connect to? It's the host portion of your ODC URL, typically something like `eng-stage-us-01.outsystems.dev`."
-2. **Validate** the answer matches `^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`. If it doesn't, ask again with an example. Do NOT accept URLs, paths, or anything that looks like more than a bare hostname.
+1. **Ask the user for their OutSystems tenant hostname.** Format: `<tenant>.outsystems.dev` (e.g. `mycompany.outsystems.dev`, `eng-stage-us-01.outsystems.dev`). The tenant slug is whatever the user chose; do not assume a fixed `<short>-<region>-<index>` pattern. Prompt verbatim:
+   > "Which OutSystems tenant should I connect to? It's the host portion of your OutSystems URL, typically something like `mycompany.outsystems.dev`."
+2. **Normalize, then validate.** Accept whatever the user gives you (URL, hostname, hostname-with-path). Strip the scheme (`https://`, `http://`), any leading `www.`, trailing slash, and any path or query — keep only the host. The result must match `^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`. Only ask again if the normalized value is still implausible (empty, contains whitespace, or clearly isn't a hostname).
 3. **Construct the MCP URL**: `https://datap-stage-us-east-1-01.stage-07.stamp.outsystemscloudrd.net/<TENANT>/mcp`.
 4. **Register the server.** Run:
    ```
    claude mcp add -s user --transport http --client-id service_studio --callback-port 7890 outsystems <URL>
    ```
-5. **Cache the tenant** for future reference: `printf '%s\n' '<TENANT>' > ~/.config/outsystems/tenant` (create the parent dir first if needed). Informational only; Claude Code stores the actual MCP config itself.
-6. **Authenticate.** Proceed to the "Authenticating" section below. The agent drives auth via tool calls; the user does NOT click anything in `/mcp`.
-7. **Retry the user's original request** once authentication completes.
+5. **Authenticate.** Proceed to the "Authenticating" section below. The agent drives auth via tool calls; the user does NOT click anything in `/mcp`.
+6. **Retry the user's original request** once authentication completes.
 
 If the user already has an `outsystems` MCP server registered but pointing at the wrong tenant, follow the same flow. The patches are idempotent for the same tenant and update the URL for a new one.
 
 ## Authenticating
 
-The server is OAuth-protected. The harness exposes two deferred tools when the user isn't yet authenticated; the agent drives the flow, the user does NOT need to run `/mcp -> outsystems -> Authenticate`.
+OAuth-protected. The harness exposes two deferred tools; the agent drives the flow — the user does NOT run `/mcp -> outsystems -> Authenticate` manually.
 
-- `mcp__outsystems__authenticate`: start the OAuth flow; returns an authorization URL.
-- `mcp__outsystems__complete_authentication`: finalize remote-session auth (see below).
+- `mcp__outsystems__authenticate`: starts the OAuth flow; returns an authorization URL.
+- `mcp__outsystems__complete_authentication { callback_url }`: finalizes auth for remote sessions.
 
-**Lazy on first use.** Before the first OutSystems tool call in a session, call `mcp__outsystems__authenticate`. Share the returned URL with the user. Then either:
+**Lazy.** Before the first OutSystems tool call in a session, call `mcp__outsystems__authenticate` and share the returned URL with the user. Then:
 
-- **Local session** (browser can reach `http://localhost:<port>/callback`): the server's real tools become available automatically. Wait for the user to confirm the browser redirected successfully, then proceed with their original request.
-- **Remote session** (callback page fails to load, e.g. SSH or devcontainer): ask the user to copy the full URL from their browser's address bar (it'll look like `http://localhost:<port>/callback?code=...&state=...`) and call `mcp__outsystems__complete_authentication { callback_url: "<that URL>" }`.
+- **Local session** (browser can reach `http://localhost:<port>/callback`): the server's real tools appear automatically — wait for the user's confirmation, then proceed.
+- **Remote session** (callback page fails to load, e.g. SSH / devcontainer): have the user copy the full URL from their browser's address bar (`http://localhost:<port>/callback?code=...&state=...`) and call `mcp__outsystems__complete_authentication { callback_url: "<that URL>" }`.
 
-**Reactive on auth error.** If a tool call mid-session fails with `data.category: "AuthError"` (token expired, refresh denied, etc.), call `mcp__outsystems__authenticate` again with the same flow, then retry the original call ONCE.
+**Reactive.** On `data.category: "AuthError"` mid-session (token expired, refresh denied, etc.): call `mcp__outsystems__authenticate` again, then retry the original call ONCE.
 
-**Never** instruct the user to run `/mcp -> outsystems -> Authenticate` manually. The agent always has the tool pair available; that menu is the host's emergency fallback, not the recommended path.
+**Don't fall back to the `/mcp -> outsystems -> Authenticate` menu** — the deferred tool pair is always available; the menu is the host's emergency fallback.
 
-**If `authenticate` itself errors** (proxy unreachable, DCR fails): surface the error verbatim to the user. Don't speculate about proxy internals; that's the signal to file an issue against `OutSystems/mcp-server-remote`.
+**If `authenticate` itself errors** (proxy unreachable, DCR fails): surface the message verbatim and file against `OutSystems/mcp-server-remote`. Don't speculate about proxy internals.
+
+## Tools at a glance
+
+Tool catalog and per-tool semantics live in the MCP server's `tools/list`; treat each tool's `description` + `inputSchema` as the source of truth, since defaults can change server-side. Tools group as:
+
+- **Apps**: `app_list`, `app_info`, `app_refs`
+- **Context Service** (seven typed lookups): `context_entities`, `context_actions`, `context_screens`, `context_structures`, `context_roles`, `context_themes`, `context_connections`
+- **Mentor** (server-side OML editing): `mentor`
+- **Publish**: `publish_start`, `publish_status`, `publish_logs`
+- **Deployments**: `deploy_start`, `deploy_status`, `deploy_messages`, `deploy_rollback`, `deploy_impact`, `deploy_impact_status`
+- **External libraries**: `extlib_upload`, `extlib_publish`, `extlib_status`, `extlib_logs`, `extlib_download_source`, `extlib_download_status`
+- **Environments**: `env_list`
+
+### Caveats
+
+Cross-tool behaviors not expressible in a single per-tool description:
+
+- **`deploy_start` — `from_env` required when both `build_key` and `revision` are omitted and `operation != "Undeploy"`.** The target `env_key` is not used as the source environment on HTTP.
+- **`publish_start` — `app_key` comes from the `mentor_session_token` claims, not arguments.** Required params: `mentor_session_id`, `mentor_session_token`, `env_key`. An explicit `app_key` is ignored.
+- **`extlib_upload` — 50 MB decoded cap (~67 MB encoded `zip_b64`); per-replica concurrency gating.** Pre-flight rejects oversize payloads; concurrent uploads queue per replica rather than reject.
+- **`context_*` — `owned_only` defaults to `true` when `app` is set, `false` tenant-wide.** Pass `owned_only: false` with `app` to keep rows inherited from referenced libraries (OutSystemsUI, Charts, etc.).
 
 ## Rules
-- This tool surface is agent-focused. Don't expose raw tool output to the user; extract the relevant fields and present them naturally.
-- Go straight to the task. No setup checks, no auth pre-flight beyond the lazy `authenticate` call described above. Identity comes from the bearer the harness already negotiated.
-- OML stays server-side. There is no `app_download`. To inspect an app, use `app_refs` + `context_*` tools. To edit an app, use `mentor` (OML lives in the server-side mentor session, never crosses the wire as bytes).
-- If `env_key`, `app_key`, an asset key, or a `mentor_session_*` token is missing and you can't reliably resolve it, ask the user. Never guess.
-- There is no per-session "selected environment" on this transport. Every environment-scoped tool takes `env_key` as a per-call argument.
-- Run independent tool calls in parallel when possible (e.g. once you have an app key, fetch info + per-type context lookups concurrently).
-- Errors carry a structured category in `data.category` (one of `AuthError`, `ValidationError`, `UpstreamError`, `InternalError`); upstream errors also include `data.upstream_status`. Use these for retry decisions, not the message text.
-- Long-running tools (`deploy_start`, `deploy_rollback`, `deploy_impact`, `publish_start`, `extlib_upload`, `extlib_publish`, `extlib_download_source`) return an operation/publication/analysis id immediately. Poll the matching `*_status` tool (`deploy_status`, `deploy_impact_status`, `publish_status`, `extlib_status`, `extlib_download_status`) until terminal; don't expect inline completion.
-- `mentor` is the exception: it streams per-step events as `notifications/progress` while the turn runs, and returns the summary on the same call.
-- The catalog and per-tool semantics live in `tools/list`. Read each tool's `description` and `inputSchema` there rather than relying on duplicated docs; defaults can change server-side, and stale duplicates drift.
+
+- **Agent-facing tools.** Don't expose raw tool output; extract the relevant fields and present them naturally.
+- **Go straight to the task.** No setup checks, no auth pre-flight beyond the lazy `authenticate` described above; identity comes from the harness-negotiated bearer.
+- **OML stays server-side.** No `app_download`. Inspect with `app_refs` + `context_*`; edit with `mentor` (OML lives in the server-side mentor session and never crosses the wire as bytes).
+- **Never guess opaque IDs.** If `env_key`, `app_key`, an asset key, or a `mentor_session_*` token is missing and you can't resolve it, ask the user.
+- **No selected environment.** Every environment-scoped tool takes `env_key` per call.
+- **Parallelize independent calls** (e.g. once you have an app key, fetch `app_info` + the per-type `context_*` lookups concurrently).
+- **Use `data.category`, not message text, for error retry decisions.** Categories: `AuthError`, `ValidationError`, `UpstreamError`, `InternalError`; upstream errors also carry `data.upstream_status`.
+- **Long-running tools return an id; poll the matching `*_status`.** Applies to all `deploy_*` (status via `deploy_status` / `deploy_impact_status`), `publish_start` (via `publish_status`), and `extlib_*` operations (via `extlib_status` / `extlib_download_status`). `mentor` is the exception — it streams per-step `notifications/progress` while the turn runs and returns the summary on the same call.
 
 ## Names
 
-The platform exposes two name forms for every asset:
-- `name`: the display name (human-readable, may contain spaces, e.g. `"AI Agent Feedback Portal"`). This is what `app_list` and `app_info` return.
-- `assetName`: the internal identifier (no spaces, e.g. `"AIAgentFeedbackPortal"`). This is what `context_*` results carry, and it's what some platform-internal contexts use.
-
-Both forms refer to the same asset. The `app:` parameter on `context_*` (and `app_list --search`) accepts either form: substring match runs case-insensitively against the display name AND a space-stripped variant of it, so `"feedback"`, `"Agent Feedback"`, and `"AgentFeedbackSystem"` all resolve the same asset.
-
-The canonical identifier is the **asset key** (a UUID). Prefer it when storing references across calls, since names can be edited but the key is stable.
-
-Each `context_*` row also carries `isReferenced` (true means inherited from a referenced library) and `producerAssetName` (e.g. `"OutSystemsUI"`). See `owned_only` semantics under "Context Service visibility".
+- `name` is the display form (may contain spaces, e.g. `"AI Agent Feedback Portal"`); `assetName` is the internal identifier (e.g. `"AIAgentFeedbackPortal"`). The `app:` parameter on `context_*` and `app_list --search` accepts either — case-insensitive substring match against both the display name and its space-stripped variant.
+- The canonical identifier is the **asset key** (UUID). Prefer it across calls; names can be edited, the key is stable.
 
 ## Mentor session round-trip
 
@@ -85,11 +97,9 @@ Each `context_*` row also carries `isReferenced` (true means inherited from a re
 - Start a fresh session (call without `mentor_session_*`) when: (a) mentor hallucinates entities/actions that don't exist; (b) you switch to an unrelated task on the same app; or (c) prior turns left the OML in a bad state.
 - If mentor refuses or returns empty, rephrase with concrete keys and a smaller scope before retrying.
 
-## Context Service visibility (`owned_only` semantics)
+## Context Service visibility (`owned_only`)
 
-The Context Service (`context_*` tools) indexes by **visibility**, not ownership: an app-scoped query returns rows owned by the app **plus** rows inherited from referenced libraries (OutSystemsUI, Charts, OutSystemsMaps, etc.), all carrying the visiting app's `assetKey`. Each row carries `isReferenced` (true means inherited) and `producerAssetKey` / `producerAssetName` so callers can group by producer.
-
-The seven typed tools (`context_entities`, `_actions`, `_screens`, `_structures`, `_roles`, `_themes`, `_connections`) accept an `owned_only` parameter; defaults to `true` when `app` is set, `false` when querying tenant-wide. Set `owned_only: false` with `app` to keep inherited rows in the response.
+`context_*` tools index by **visibility**, not ownership: app-scoped queries return owned rows plus rows inherited from referenced libraries (OutSystemsUI, Charts, etc.). Each row carries `isReferenced` and `producerAssetKey`/`producerAssetName`. `owned_only` defaults to `true` when `app` is set, `false` tenant-wide; pass `owned_only: false` with `app` to keep inherited rows.
 
 ## Workflows
 

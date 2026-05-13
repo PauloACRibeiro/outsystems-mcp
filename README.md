@@ -1,6 +1,6 @@
 # ase-mcp
 
-Distribution repo for the OutSystems Developer Cloud (ODC) remote MCP: Claude Code plugin + Kiro Power. The MCP server itself lives in `OutSystems/mcp-server-remote`. To install, paste the matching prompt below into your AI assistant.
+Distribution repo for the OutSystems MCP: Claude Code plugin + Kiro Power. The MCP server itself lives in `OutSystems/mcp-server-remote`. To install, paste the matching prompt below into your AI assistant.
 
 ## Install - Claude Code
 
@@ -23,7 +23,7 @@ Paste into Kiro Chat:
 Install the OutSystems Power from https://github.com/OutSystems/ase-mcp.
 Step 1: clone the repo to ~/git/ase-mcp if it isn't there yet: `git clone https://github.com/OutSystems/ase-mcp.git ~/git/ase-mcp`.
 Step 2: write ~/.kiro/powers/registries/outsystems.json with this exact content (substitute the literal value of $HOME):
-{"name":"OutSystems Developer Cloud","type":"local","powers":[{"name":"outsystems","displayName":"OutSystems Developer Cloud - remote MCP","description":"Edit, publish, deploy OutSystems apps from your AI assistant.","source":{"type":"local","path":"$HOME/git/ase-mcp/kiro/outsystems"},"autoInstall":true}]}
+{"name":"OutSystems","type":"local","powers":[{"name":"outsystems","displayName":"OutSystems - MCP","description":"Edit, publish, deploy OutSystems apps from your AI assistant.","iconUrl":"file://$HOME/git/ase-mcp/kiro/outsystems/icon.png","source":{"type":"local","path":"$HOME/git/ase-mcp/kiro/outsystems"},"autoInstall":true}]}
 Step 3: tell me to restart Kiro so it auto-installs the Power.
 Step 4: after the restart, ask me for my OutSystems tenant hostname.
 Step 5: when I tell you, set the URL `https://datap-stage-us-east-1-01.stage-07.stamp.outsystemscloudrd.net/<my-tenant>/mcp` in two files (read first, preserve every other entry):
@@ -37,5 +37,5 @@ Step 6: tell me the OAuth flow opens automatically on the next OutSystems tool c
 If you previously installed this as `odc-mcp` (versions 0.4.x and earlier), the rename to `outsystems` requires a re-install:
 
 - **Claude Code**: `claude plugin uninstall odc-mcp@odc-mcp` and `claude mcp remove odc`, then follow the install prompt above. You'll need to re-authenticate (OAuth state is keyed per server name).
-- **Kiro**: delete `~/.kiro/powers/registries/outsystems-odc.json` and `~/.kiro/powers/installed/odc-mcp/`, remove the `power-odc-mcp-odc` entry from `~/.kiro/settings/mcp.json` `powers.mcpServers`, then follow the install prompt above.
+- **Kiro**: delete `~/.kiro/powers/registries/outsystems-odc.json` and `~/.kiro/powers/installed/odc-mcp/`, drop the `odc-mcp` entry from `~/.kiro/powers/installed.json` (`installedPowers[]`), and remove the `power-odc-mcp-odc` entry from `~/.kiro/settings/mcp.json` `powers.mcpServers`. Then follow the install prompt above.
 
