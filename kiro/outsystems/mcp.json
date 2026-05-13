@@ -3,7 +3,7 @@
   "mcpServers": {
     "outsystems": {
       "type": "http",
-      "url": "https://mcp-test.datap-dev-us-east-1-01.dev-06.stamp.outsystemscloudrd.net/UNCONFIGURED-TENANT/mcp",
+      "url": "https://datap-dev-us-east-1-01.dev-06.stamp.outsystemscloudrd.net/UNCONFIGURED-TENANT/mcp",
       "timeout": 100000
     }
   }
