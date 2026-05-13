@@ -56,7 +56,7 @@ Tool catalog and per-tool semantics live in the MCP server's `tools/list`; treat
 
 - **Apps**: `app_list`, `app_info`, `app_refs`
 - **Context Service** (seven typed lookups): `context_entities`, `context_actions`, `context_screens`, `context_structures`, `context_roles`, `context_themes`, `context_connections`
-- **Mentor** (server-side OML editing): `mentor`
+- **Mentor** (server-side OML editing): `mentor_start`, `mentor_get_run`, `mentor_cancel`
 - **Publish**: `publish_start`, `publish_status`, `publish_logs`
 - **Deployments**: `deploy_start`, `deploy_status`, `deploy_messages`, `deploy_rollback`, `deploy_impact`, `deploy_impact_status`
 - **External libraries**: `extlib_upload`, `extlib_publish`, `extlib_status`, `extlib_logs`, `extlib_download_source`, `extlib_download_status`
@@ -75,12 +75,12 @@ Cross-tool behaviors not expressible in a single per-tool description:
 
 - **Agent-facing tools.** Don't expose raw tool output; extract the relevant fields and present them naturally.
 - **Go straight to the task.** No setup checks, no auth pre-flight beyond the lazy `authenticate` described above; identity comes from the harness-negotiated bearer.
-- **OML stays server-side.** No `app_download`. Inspect with `app_refs` + `context_*`; edit with `mentor` (OML lives in the server-side mentor session and never crosses the wire as bytes).
+- **OML stays server-side.** No `app_download`. Inspect with `app_refs` + `context_*`; edit with the mentor flow (`mentor_start` → poll `mentor_get_run`). The OML lives in the server-side mentor session and never crosses the wire as bytes.
 - **Never guess opaque IDs.** If `env_key`, `app_key`, an asset key, or a `mentor_session_*` token is missing and you can't resolve it, ask the user.
 - **No selected environment.** Every environment-scoped tool takes `env_key` per call.
 - **Parallelize independent calls** (e.g. once you have an app key, fetch `app_info` + the per-type `context_*` lookups concurrently).
 - **Use `data.category`, not message text, for error retry decisions.** Categories: `AuthError`, `ValidationError`, `UpstreamError`, `InternalError`; upstream errors also carry `data.upstream_status`.
-- **Long-running tools return an id; poll the matching `*_status`.** Applies to all `deploy_*` (status via `deploy_status` / `deploy_impact_status`), `publish_start` (via `publish_status`), and `extlib_*` operations (via `extlib_status` / `extlib_download_status`). `mentor` is the exception — it streams per-step `notifications/progress` while the turn runs and returns the summary on the same call.
+- **Long-running tools return an id; poll for status.** Applies to all `deploy_*` (status via `deploy_status` / `deploy_impact_status`), `publish_start` (via `publish_status`), `extlib_*` operations (via `extlib_status` / `extlib_download_status`), and mentor (`mentor_start` returns a `runId`; poll `mentor_get_run` until terminal; `mentor_cancel` to abort). Per-tool polling shape is in each tool's live description.
 
 ## Names
 
@@ -89,20 +89,18 @@ Cross-tool behaviors not expressible in a single per-tool description:
 
 ## Mentor session round-trip
 
-`mentor` is a multi-turn conversation backed by a server-side session that holds the loaded OML.
+Mentor is a multi-turn conversation backed by a server-side session that holds the loaded OML. Driven via the async surface — `mentor_start` opens a run, `mentor_get_run` polls progress, `mentor_cancel` aborts. Per-call args, response shape, polling cadence, cursor semantics, and error codes are in each tool's live `description` + `inputSchema`.
 
-- **First turn** args: `{app_key, prompt}` (+ optional `mode`, `max_turn_time`, `verbose`). The server downloads the OML, runs the agent, and returns `{mentor_session_id, mentor_session_token, summary, events}`.
-- **Resume turn** args: `{mentor_session_id, mentor_session_token, prompt}` (+ optional `mode`, `max_turn_time`, `verbose`). `app_key` is taken from the validated token and ignored if you pass it.
-- The `mentor_session_token` is HMAC-signed and binds (tenant, user, session id, app, agent_resume_id). Echo it back **verbatim** on every resume turn; tampering yields `ValidationError`.
-- Each turn returns a fresh token. Use the latest one on the next call.
-- Sessions auto-GC after 30 min idle. Resuming after GC transparently re-downloads the OML (sticky-miss recovery); same `mentor_session_id` and conversation continue.
-- To call `publish_start` on the edited OML, you need both `mentor_session_id` and `mentor_session_token` from the most recent turn.
+- **First turn** vs **resume turn** is determined by whether you pass a prior `mentor_session_token` to `mentor_start`. The token is HMAC-signed and binds (tenant, user, session id, app, agent_resume_id); echo it back **verbatim** on resume.
+- The refreshed `mentor_session_token` only appears in the terminal `mentor_get_run.result` (alongside `mentor_session_id`, `summary`, and `events`). Use the newest token on the next start.
+- Sessions auto-GC after 30 min idle. Resuming after GC transparently re-downloads the OML; same `mentor_session_id` and conversation continue.
+- To call `publish_start` on the edited OML you need `mentor_session_id` + `mentor_session_token` from the most recent terminal-success `mentor_get_run.result`.
 
-**When to use `mentor` vs `context_*`:**
-- For *info* about an app, prefer `context_*`. Lightweight, structured, no OML download. Only fall back to `mentor` when context can't answer (deep OML internals, logic flow traversal).
-- For *edits*, `mentor` is the only path.
+**When to use the mentor flow vs `context_*`:**
+- For *info* about an app, prefer `context_*`. Lightweight, structured, no OML download. Only fall back to mentor when context can't answer (deep OML internals, logic flow traversal).
+- For *edits*, the mentor flow is the only path.
 - Reuse the same session across follow-up turns in one task; the server-side OML and tool history stay loaded.
-- Start a fresh session (call without `mentor_session_*`) when: (a) mentor hallucinates entities/actions that don't exist; (b) you switch to an unrelated task on the same app; or (c) prior turns left the OML in a bad state.
+- Start a fresh session (call `mentor_start` without `mentor_session_*`) when: (a) mentor hallucinates entities/actions that don't exist; (b) you switch to an unrelated task on the same app; or (c) prior turns left the OML in a bad state.
 - If mentor refuses or returns empty, rephrase with concrete keys and a smaller scope before retrying.
 - For required fields, ask mentor to set `IsMandatory=True` on the input widget and leave the label text bare — the platform paints a single red `*` after the label automatically. Don't ask mentor to put a literal `*` in `Label.Text`; it renders black, theme-blind, and stacks with the platform asterisk.
 
@@ -123,8 +121,8 @@ Cross-tool behaviors not expressible in a single per-tool description:
 3. Synthesize into the user-facing explanation.
 
 **Edit an existing app and ship it:**
-1. First turn: `mentor {app_key, prompt: "Add a due date field to Task"}`. Keep `mentor_session_id` + `mentor_session_token` from the response.
-2. Optional follow-up turns: `mentor {mentor_session_id, mentor_session_token, prompt: "..."}`. Each turn returns a fresh token; use the newest one next.
+1. First turn: `mentor_start {app_key, prompt: "Add a due date field to Task"}` returns a `runId`. Poll `mentor_get_run {runId, cursor}` until terminal; pull `mentor_session_id` + `mentor_session_token` out of `result`.
+2. Optional follow-up turns: `mentor_start {mentor_session_id, mentor_session_token, prompt: "..."}` and poll the same way. Each terminal result returns a fresh token; use the newest one next.
 3. `publish_start {mentor_session_id, mentor_session_token, env_key}` returns `publication_id`.
 4. Poll `publish_status {publication_id}` until terminal. Use `publish_logs {pub_key: publication_id}` for messages on failure.
 
@@ -139,7 +137,7 @@ Cross-tool behaviors not expressible in a single per-tool description:
 3. Poll `extlib_status {operation_key}` until `Published`. On validation failure use `extlib_logs {operation_key}`.
 
 **Reference an external library from an app:**
-- Just ask mentor: `mentor {app_key, prompt: "Use the <ActionName> action from <LibraryName> in <screen edit>."}`.
+- Just ask mentor: `mentor_start {app_key, prompt: "Use the <ActionName> action from <LibraryName> in <screen edit>."}`, then poll `mentor_get_run` as usual.
 
 **Run a deployment-impact analysis:**
 1. `deploy_impact {key, env_key}` returns analysis id.
