@@ -20,7 +20,7 @@ Steps:
 1. **Ask the user for their OutSystems tenant hostname.** Format: `<short>-<region>-<index>.outsystems.dev` (e.g. `eng-stage-us-01.outsystems.dev`). Prompt verbatim:
    > "Which OutSystems tenant should I connect to? It's the host portion of your ODC URL, typically something like `eng-stage-us-01.outsystems.dev`."
 2. **Validate** against `^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`. Reject URLs, paths, or anything that isn't a bare hostname; ask again with an example.
-3. **Construct the URL**: `https://datap-dev-us-east-1-01.dev-06.stamp.outsystemscloudrd.net/<TENANT>/mcp`.
+3. **Construct the URL**: `https://datap-stage-us-east-1-01.stage-07.stamp.outsystemscloudrd.net/<TENANT>/mcp`.
 4. **Patch two files.** Use Read + Write: read first, preserve every other entry, write back. Never clobber siblings. If the existing file has comments (JSONC), preserve them; only modify the URL field.
    - `~/.kiro/powers/installed/outsystems/mcp.json`: set `mcpServers.outsystems` to
      ```
