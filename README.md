@@ -32,10 +32,10 @@ Step 5: when I tell you, set the URL `https://datap-stage-us-east-1-01.stage-07.
 Step 6: tell me the OAuth flow opens automatically on the next OutSystems tool call; you'll drive auth via the `authenticate` tool, not by clicking in Kiro's UI.
 ```
 
-## Upgrading from `outsystems-mcp`
+## Upgrading from `odc-mcp`
 
-If you previously installed this as `outsystems-mcp` (versions 0.4.x and earlier), the rename to `outsystems` requires a re-install:
+If you previously installed this as `odc-mcp` (versions 0.4.x and earlier), the rename to `outsystems` requires a re-install:
 
-- **Claude Code**: `claude plugin uninstall outsystems-mcp@outsystems-mcp` and `claude mcp remove outsystems`, then follow the install prompt above. You'll need to re-authenticate (OAuth state is keyed per server name).
-- **Kiro**: delete `~/.kiro/powers/registries/outsystems-outsystems.json` and `~/.kiro/powers/installed/outsystems-mcp/`, drop the `outsystems-mcp` entry from `~/.kiro/powers/installed.json` (`installedPowers[]`), and remove the `power-outsystems-mcp-outsystems` entry from `~/.kiro/settings/mcp.json` `powers.mcpServers`. Then follow the install prompt above.
+- **Claude Code**: `claude plugin uninstall odc-mcp@odc-mcp` and `claude mcp remove odc`, then follow the install prompt above. You'll need to re-authenticate (OAuth state is keyed per server name).
+- **Kiro**: delete `~/.kiro/powers/registries/outsystems-odc.json` and `~/.kiro/powers/installed/odc-mcp/`, drop the `odc-mcp` entry from `~/.kiro/powers/installed.json` (`installedPowers[]`), and remove the `power-odc-mcp-odc` entry from `~/.kiro/settings/mcp.json` `powers.mcpServers`. Then follow the install prompt above.
 
