@@ -33,7 +33,7 @@ Two ways to install the Power into Kiro (both work for an internal/private repo,
 
 ```bash
 # 1. Clone the toolkit somewhere (keep this clone — Kiro reads from it)
-git clone https://github.com/OutSystems/ase-mcp ~/git/ase-mcp
+git clone https://github.com/OutSystems/outsystems-mcp ~/git/outsystems-mcp
 
 # 2. Drop a registry pointer that references the local clone
 mkdir -p ~/.kiro/powers/registries
@@ -45,7 +45,7 @@ cat > ~/.kiro/powers/registries/outsystems.json <<EOF
     "name": "outsystems",
     "displayName": "OutSystems - MCP",
     "description": "Edit, publish, deploy OutSystems apps from your AI assistant.",
-    "source": {"type": "local", "path": "$HOME/git/ase-mcp/kiro/outsystems"},
+    "source": {"type": "local", "path": "$HOME/git/outsystems-mcp/kiro/outsystems"},
     "autoInstall": true
   }]
 }
@@ -66,7 +66,7 @@ cat > ~/.kiro/powers/registries/outsystems.json <<EOF
     "description": "Edit, publish, deploy OutSystems apps from your AI assistant.",
     "source": {
       "type": "repo",
-      "repositoryCloneUrl": "https://github.com/OutSystems/ase-mcp",
+      "repositoryCloneUrl": "https://github.com/OutSystems/outsystems-mcp",
       "pathInRepo": "kiro/outsystems",
       "repositoryBranch": "main"
     },
@@ -144,7 +144,7 @@ Workflows below show MCP tool form. Identity (tenant + user) is derived from the
 **Solutions:**
 1. **Browser didn't open at all:** ask the agent to call `mcp__outsystems__authenticate` again; it returns the auth URL. Share the URL with the user to open manually.
 2. **Callback page shows "site can't be reached" (remote session):** the auth code IS in the URL bar. Copy the full URL and ask the agent to call `mcp__outsystems__complete_authentication { callback_url: "<that URL>" }`.
-3. **DCR or proxy errors:** the `as-proxy` pod logs in the cluster show the registration attempt. File against `OutSystems/mcp-server-remote`.
+3. **DCR or proxy errors:** the `as-proxy` pod logs in the cluster show the registration attempt. File against `OutSystems/outsystems-mcp`.
 4. **Last resort:** remove and re-add the `outsystems` server in Kiro's MCP UI to wipe stale OAuth state, then ask Kiro Chat to redo the first-use steering flow.
 
 ### Tool errors
