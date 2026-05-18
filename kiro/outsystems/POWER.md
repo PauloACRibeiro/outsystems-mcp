@@ -21,7 +21,7 @@ There is no CLI to install. There is no OML on disk. OML stays server-side; you 
 - Kiro 0.11.133 or newer.
 - A web browser on the same machine as Kiro (Kiro picks an ephemeral local port for the OAuth callback after Dynamic Client Registration).
 - An OutSystems tenant hostname (e.g. `mycompany.outsystems.dev`).
-- Network access to the tenant hostname over HTTPS.
+- Network access to the OutSystems tenant hostname (e.g. `*.outsystems.dev`).
 
 ### Installation
 
