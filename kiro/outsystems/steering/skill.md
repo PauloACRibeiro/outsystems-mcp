@@ -9,11 +9,11 @@ You are connected to OutSystems over the MCP HTTP transport. OutSystems is a clo
 
 ## First use / setup
 
-The Power ships with a sentinel URL containing `UNCONFIGURED-TENANT`. The first time the user asks for anything OutSystems-related, finish the wiring on their behalf. Do this once; the edits are idempotent for re-runs against a different tenant.
+The Power doesn't ship its own MCP server config — the agent writes the tenant URL straight into Kiro's user-level `~/.kiro/settings/mcp.json`. Do this once; the edit is idempotent for re-runs against a different tenant, and it survives Kiro's "Check for updates → Install updates" flow (which wipes per-Power config files).
 
 Trigger conditions:
 - The user asks for anything OutSystems-related, AND
-- The MCP server URL still contains `UNCONFIGURED-TENANT`, OR a call returns `tenant not configured` / connection errors.
+- `~/.kiro/settings/mcp.json` has no `outsystems` key under top-level `mcpServers`, OR a call returns `tenant not configured` / connection errors.
 
 Steps:
 
@@ -21,16 +21,15 @@ Steps:
    > "Which OutSystems tenant should I connect to? It's the host portion of your OutSystems URL, typically something like `mycompany.outsystems.dev`."
 2. **Normalize, then validate.** Accept whatever the user gives you (URL, hostname, hostname-with-path). Strip the scheme (`https://`, `http://`), any leading `www.`, trailing slash, and any path or query — keep only the host. The result must match `^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`. Only ask again if the normalized value is still implausible (empty, contains whitespace, or clearly isn't a hostname).
 3. **Construct the URL**: `https://<TENANT>/mcp`.
-4. **Patch two files.** Use Read + Write: read first, preserve every other entry, write back. Never clobber siblings. If the existing file has comments (JSONC), preserve them; only modify the URL field.
-   - `~/.kiro/powers/installed/outsystems/mcp.json`: set `mcpServers.outsystems` to
-     ```
-     {"type": "http", "url": "<URL>", "timeout": 100000}
-     ```
-   - `~/.kiro/settings/mcp.json`: set `powers.mcpServers["power-outsystems-outsystems"]` to the same object. ALWAYS keep a top-level `mcpServers` key (empty object is fine if no other servers); Kiro's user-level loader rejects the file without it.
+4. **Patch `~/.kiro/settings/mcp.json`.** Use Read + Write: read first, preserve every other entry, write back. Never clobber siblings. If the file has comments (JSONC), preserve them. Set top-level `mcpServers.outsystems` to:
+   ```
+   {"type": "http", "url": "<URL>", "timeout": 100000}
+   ```
+   ALWAYS keep top-level `mcpServers` as an object (Kiro's user-level loader rejects the file without it). If a stale `powers.mcpServers["power-outsystems-outsystems"]` entry exists from an earlier install pattern, remove it.
 5. **Tell the user** Kiro's MCP file watcher will reload within a few seconds. Then proceed to the "Authenticating" section below; the agent drives the OAuth flow on the first OutSystems tool call.
 6. **Retry the user's original request** once authentication completes.
 
-If the user later asks to switch tenants, repeat this flow; the patches overwrite the URL idempotently.
+If the user later asks to switch tenants, repeat this flow; the patch overwrites the URL idempotently.
 
 ## Authenticating
 

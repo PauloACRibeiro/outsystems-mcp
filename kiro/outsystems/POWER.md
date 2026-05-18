@@ -25,7 +25,7 @@ There is no CLI to install. There is no OML on disk. OML stays server-side; you 
 
 ### Installation
 
-This Power ships with a **sentinel** URL — `https://UNCONFIGURED-TENANT/mcp`. The first time you ask Kiro Chat to do something with OutSystems, the agent will notice no working MCP connection, ask you for your tenant hostname, and patch the URL into Kiro's MCP configuration. No script, no shell command. Just install the Power and start chatting.
+This Power doesn't ship its own MCP server config. The first time you ask Kiro Chat to do something with OutSystems, the agent will notice no `outsystems` MCP server is registered, ask you for your tenant hostname, and add an entry to Kiro's user-level `~/.kiro/settings/mcp.json`. No script, no shell command. Just install the Power and start chatting.
 
 Two ways to install the Power into Kiro (both work for an internal/private repo, assuming you have GitHub access):
 
@@ -76,13 +76,13 @@ cat > ~/.kiro/powers/registries/outsystems.json <<EOF
 EOF
 ```
 
-Restart Kiro after dropping the registry file. On startup Kiro auto-installs the Power: it copies `POWER.md`, `mcp.json`, and `steering/skill.md` into `~/.kiro/powers/installed/outsystems/` and adds an entry to `~/.kiro/settings/mcp.json` under `powers.mcpServers["power-outsystems-outsystems"]`. The Power appears in Kiro's Powers UI.
+Restart Kiro after dropping the registry file. On startup Kiro auto-installs the Power: it copies `POWER.md` and `steering/skill.md` into `~/.kiro/powers/installed/outsystems/`. The Power appears in Kiro's Powers UI; the MCP server itself gets registered by the agent on first use (see the steering content).
 
 Then open Kiro Chat and ask it for anything OutSystems-related; the steering content takes over and the agent walks you through the tenant prompt + OAuth on first use.
 
 ### Switching tenants
 
-Just tell Kiro Chat "switch OutSystems to a different tenant" (or similar). The agent will repeat the tenant prompt and update the URL in both `~/.kiro/powers/installed/outsystems/mcp.json` and `~/.kiro/settings/mcp.json`. Kiro's file watcher reloads MCP automatically.
+Just tell Kiro Chat "switch OutSystems to a different tenant" (or similar). The agent will repeat the tenant prompt and update `mcpServers.outsystems.url` in `~/.kiro/settings/mcp.json`. Kiro's file watcher reloads MCP automatically.
 
 ## Common Workflows
 
@@ -129,12 +129,12 @@ Workflows below show MCP tool form. Identity (tenant + user) is derived from the
 
 ### MCP server unreachable
 
-**Symptom:** Kiro reports the `outsystems` server as not configured / not connected, or tools return errors mentioning `UNCONFIGURED-TENANT`.
+**Symptom:** Kiro reports the `outsystems` server as not configured / not connected, or tools return `tenant not configured` errors.
 
 **Solutions:**
-1. Have you completed the first-use tenant prompt? Open Kiro Chat and ask anything OutSystems-related; the agent will notice the unconfigured state and walk you through it.
-2. Verify the install: `jq '.installedPowers[] | select(.name=="outsystems")' ~/.kiro/powers/installed.json` should return the entry, and `jq '.powers.mcpServers."power-outsystems-outsystems"' ~/.kiro/settings/mcp.json` should return an object with a `https://<your-tenant>/mcp` URL.
-3. If the URL still says `UNCONFIGURED-TENANT`, the tenant prompt was skipped or interrupted. Tell Kiro Chat "set up OutSystems again" and complete the flow.
+1. Have you completed the first-use tenant prompt? Open Kiro Chat and ask anything OutSystems-related; the agent will notice the missing server entry and walk you through it.
+2. Verify the install: `jq '.installedPowers[] | select(.name=="outsystems")' ~/.kiro/powers/installed.json` should return the entry, and `jq '.mcpServers.outsystems' ~/.kiro/settings/mcp.json` should return an object with a `https://<your-tenant>/mcp` URL.
+3. If there's no `outsystems` entry under top-level `mcpServers`, the tenant prompt was skipped or interrupted. Tell Kiro Chat "set up OutSystems again" and complete the flow.
 4. Verify network reachability: `curl -I "<URL-from-settings>"` should return an HTTP response (likely 401 without a bearer; that's expected and means routing works).
 
 ### OAuth doesn't open / callback fails
@@ -167,8 +167,7 @@ The Power's installed state (created by Kiro's auto-install when it processes th
 | `~/.kiro/powers/registries/outsystems.json` | LocalRegistrySchema; points at the Power source. |
 | `~/.kiro/powers/installed.json` | Lists `outsystems` as installed. |
 | `~/.kiro/powers/installed/outsystems/POWER.md` | This file (copied from source). |
-| `~/.kiro/powers/installed/outsystems/mcp.json` | Per-power MCP config. The agent updates the URL on first use; Kiro then namespaces the entry into `settings/mcp.json` as `power-outsystems-outsystems`. |
 | `~/.kiro/powers/installed/outsystems/steering/skill.md` | Agent-facing skill content; loads into the chat agent's context whenever the Power is active. Drives the tenant prompt + MCP wiring + OAuth. |
-| `~/.kiro/settings/mcp.json` | Kiro's MCP loader file. The Power's namespaced entry lives at `powers.mcpServers["power-outsystems-outsystems"]`. The agent updates the URL here to match `installed/outsystems/mcp.json`. Top-level `mcpServers` is preserved (even empty); Kiro's user-level loader requires it. |
+| `~/.kiro/settings/mcp.json` | Kiro's MCP loader file. The agent writes the tenant URL to top-level `mcpServers.outsystems` here on first use. The Power has no per-install `mcp.json`, so Kiro's update flow can't corrupt the tenant URL. |
 
 Schemas verified against `/opt/kiro/resources/app/extensions/kiro.kiro-agent/dist/extension.js` (Kiro 0.11.133, search for `PowerDefinitionV2Schema`, `LocalRegistrySchema`, `InstalledPowersFileSchema`, `MCPOptionsSchema`). Kiro's `MCPOptionsSchema` accepts `command/args/env/cwd/url/headers/type/timeout/disabled/autoApprove/disabledTools` — **no `oauth` block**. OAuth is discovered from the 401 challenge and Kiro handles DCR internally with an ephemeral callback port.
