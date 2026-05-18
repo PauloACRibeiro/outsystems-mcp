@@ -1,6 +1,6 @@
 # outsystems-mcp
 
-Distribution repo for the OutSystems MCP: Claude Code plugin + Kiro Power. The MCP server itself lives in `OutSystems/outsystems-mcp`. To install, paste the matching prompt below into your AI assistant.
+Distribution repo for the OutSystems MCP: Claude Code plugin + Kiro Power. To install, paste the matching prompt below into your AI assistant.
 
 ## Install - Claude Code
 
