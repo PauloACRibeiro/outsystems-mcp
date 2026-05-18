@@ -14,7 +14,7 @@ If the `outsystems` MCP tools aren't visible in your toolset, or a call returns 
 1. **Ask the user for their OutSystems tenant hostname.** Format: `<tenant>.outsystems.dev` (e.g. `mycompany.outsystems.dev`, `eng-stage-us-01.outsystems.dev`). The tenant slug is whatever the user chose; do not assume a fixed `<short>-<region>-<index>` pattern. Prompt verbatim:
    > "Which OutSystems tenant should I connect to? It's the host portion of your OutSystems URL, typically something like `mycompany.outsystems.dev`."
 2. **Normalize, then validate.** Accept whatever the user gives you (URL, hostname, hostname-with-path). Strip the scheme (`https://`, `http://`), any leading `www.`, trailing slash, and any path or query — keep only the host. The result must match `^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`. Only ask again if the normalized value is still implausible (empty, contains whitespace, or clearly isn't a hostname).
-3. **Construct the MCP URL**: `https://datap-stage-us-east-1-01.stage-07.stamp.outsystemscloudrd.net/<TENANT>/mcp`.
+3. **Construct the MCP URL**: `https://<TENANT>/mcp`.
 4. **Register the server.** Run:
    ```
    claude mcp add -s user --transport http --client-id service_studio --callback-port 7890 outsystems <URL>

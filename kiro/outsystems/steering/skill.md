@@ -20,7 +20,7 @@ Steps:
 1. **Ask the user for their OutSystems tenant hostname.** Format: `<tenant>.outsystems.dev` (e.g. `mycompany.outsystems.dev`, `eng-stage-us-01.outsystems.dev`). The tenant slug is whatever the user chose; do not assume a fixed `<short>-<region>-<index>` pattern. Prompt verbatim:
    > "Which OutSystems tenant should I connect to? It's the host portion of your OutSystems URL, typically something like `mycompany.outsystems.dev`."
 2. **Normalize, then validate.** Accept whatever the user gives you (URL, hostname, hostname-with-path). Strip the scheme (`https://`, `http://`), any leading `www.`, trailing slash, and any path or query — keep only the host. The result must match `^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`. Only ask again if the normalized value is still implausible (empty, contains whitespace, or clearly isn't a hostname).
-3. **Construct the URL**: `https://datap-stage-us-east-1-01.stage-07.stamp.outsystemscloudrd.net/<TENANT>/mcp`.
+3. **Construct the URL**: `https://<TENANT>/mcp`.
 4. **Patch two files.** Use Read + Write: read first, preserve every other entry, write back. Never clobber siblings. If the existing file has comments (JSONC), preserve them; only modify the URL field.
    - `~/.kiro/powers/installed/outsystems/mcp.json`: set `mcpServers.outsystems` to
      ```
