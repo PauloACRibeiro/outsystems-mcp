@@ -25,7 +25,7 @@ Steps:
    ```
    {"type": "http", "url": "<URL>", "timeout": 100000}
    ```
-   ALWAYS keep top-level `mcpServers` as an object (Kiro's user-level loader rejects the file without it). If a stale `powers.mcpServers["power-outsystems-outsystems"]` entry exists from an earlier install pattern, remove it.
+   ALWAYS keep top-level `mcpServers` as an object (Kiro's user-level loader rejects the file without it).
 5. **Tell the user** Kiro's MCP file watcher will reload within a few seconds. Then proceed to the "Authenticating" section below; the agent drives the OAuth flow on the first OutSystems tool call.
 6. **Retry the user's original request** once authentication completes.
 
