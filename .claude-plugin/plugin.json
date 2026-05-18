@@ -1,7 +1,7 @@
 {
-  "name": "odc-mcp",
-  "description": "OutSystems Developer Cloud — remote MCP integration. Authenticate once, then edit, publish, deploy, and search OutSystems apps from your AI assistant.",
-  "version": "0.4.0",
+  "name": "outsystems",
+  "description": "Edit, publish, deploy, and search OutSystems apps from your AI assistant.",
+  "version": "0.5.0",
   "author": {
     "name": "OutSystems AI Platform"
   },
