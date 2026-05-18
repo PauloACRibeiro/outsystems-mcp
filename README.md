@@ -22,8 +22,8 @@ Paste into Kiro Chat:
 ```
 Install the OutSystems Power from https://github.com/OutSystems/outsystems-mcp.
 Step 1: clone the repo to ~/git/outsystems-mcp if it isn't there yet: `git clone https://github.com/OutSystems/outsystems-mcp.git ~/git/outsystems-mcp`.
-Step 2: write ~/.kiro/powers/registries/outsystems.json with this exact content (substitute the literal value of $HOME):
-{"name":"OutSystems","type":"local","powers":[{"name":"outsystems","displayName":"OutSystems - MCP","description":"Edit, publish, deploy OutSystems apps from your AI assistant.","iconUrl":"file://$HOME/git/outsystems-mcp/kiro/outsystems/icon.png","source":{"type":"local","path":"$HOME/git/outsystems-mcp/kiro/outsystems"},"autoInstall":true}]}
+Step 2: base64-encode ~/git/outsystems-mcp/kiro/outsystems/icon.png with `base64 -w0` (Linux) or `base64 -i` (macOS). Then write ~/.kiro/powers/registries/outsystems.json with this content (substitute the literal value of $HOME, and inline the base64 string in place of <ICON_BASE64>):
+{"name":"OutSystems","type":"local","powers":[{"name":"outsystems","displayName":"OutSystems - MCP","description":"Edit, publish, deploy OutSystems apps from your AI assistant.","iconUrl":"data:image/png;base64,<ICON_BASE64>","source":{"type":"local","path":"$HOME/git/outsystems-mcp/kiro/outsystems"},"autoInstall":true}]}
 Step 3: tell me to restart Kiro so it auto-installs the Power.
 Step 4: after the restart, ask me for my OutSystems tenant hostname.
 Step 5: when I tell you, set the URL `https://<my-tenant>/mcp` in two files (read first, preserve every other entry):
