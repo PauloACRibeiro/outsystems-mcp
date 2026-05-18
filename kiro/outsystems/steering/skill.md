@@ -11,9 +11,10 @@ You are connected to OutSystems over the MCP HTTP transport. OutSystems is a clo
 
 The Power doesn't ship its own MCP server config — the agent writes the tenant URL straight into Kiro's user-level `~/.kiro/settings/mcp.json`. Do this once; the edit is idempotent for re-runs against a different tenant, and it survives Kiro's "Check for updates → Install updates" flow (which wipes per-Power config files).
 
-Trigger conditions:
-- The user asks for anything OutSystems-related, AND
-- `~/.kiro/settings/mcp.json` has no `outsystems` key under top-level `mcpServers`, OR a call returns `tenant not configured` / connection errors.
+Trigger conditions (any of):
+- The user asks for anything OutSystems-related AND `~/.kiro/settings/mcp.json` has no `outsystems` key under top-level `mcpServers`.
+- A call returns `tenant not configured` / connection errors.
+- The user explicitly asks to switch tenants (e.g. "switch OutSystems to a different tenant", "point this at `<other-tenant>`").
 
 Steps:
 

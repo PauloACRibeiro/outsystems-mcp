@@ -10,7 +10,7 @@ Paste into Claude Code:
 Install the OutSystems outsystems-mcp plugin from OutSystems/outsystems-mcp on GitHub.
 Step 1: run `claude plugin marketplace add OutSystems/outsystems-mcp`.
 Step 2: run `claude plugin install outsystems@outsystems`.
-Step 3: ask me for my OutSystems tenant hostname (something like `eng-stage-us-01.outsystems.dev`).
+Step 3: ask me for my OutSystems tenant hostname (something like `mycompany.outsystems.dev`).
 Step 4: when I tell you, run `claude mcp add -s user --transport http --client-id service_studio --callback-port 7890 outsystems https://<my-tenant>/mcp` (substitute my actual tenant for `<my-tenant>`).
 Step 5: tell me to restart Claude Code, then ask anything OutSystems-related; you'll drive the OAuth flow automatically via the `authenticate` tool. Do NOT tell me to run `/mcp -> outsystems -> Authenticate` manually.
 ```
@@ -38,7 +38,7 @@ Paste into your harness:
 
 ```
 Install the OutSystems MCP server.
-Step 1: ask me for my OutSystems tenant hostname (something like `eng-stage-us-01.outsystems.dev`).
+Step 1: ask me for my OutSystems tenant hostname (something like `mycompany.outsystems.dev`).
 Step 2: register `outsystems` as an MCP server in this harness's configuration, pointing at `https://<my-tenant>/mcp` over the streamable HTTP transport. Use whatever wiring the harness prefers — a CLI command (similar to Claude Code's `claude mcp add`), a settings UI, or hand-editing the harness's MCP config file. The server requires OAuth and supports Dynamic Client Registration, so no shared `client_id` setup is needed.
 Step 3: fetch https://raw.githubusercontent.com/OutSystems/outsystems-mcp/main/SKILL.md and inject its contents into this harness's instructions/rules/system-prompt mechanism (e.g. `AGENTS.md` for Codex CLI, `.cursorrules` for Cursor, the system prompt config for Continue, etc.). The skill covers conventions (OML stays server-side, polling shape for long-running tools, error category enums, mentor session round-trip) that the tool descriptions alone don't fully convey.
 Step 4: trigger authentication. If the harness exposes per-server `authenticate` / `complete_authentication` tools after registration, call those (lazy on first tool call). Otherwise let the harness's built-in MCP auth UI handle the OAuth handshake.
