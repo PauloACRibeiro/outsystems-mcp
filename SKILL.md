@@ -4,17 +4,17 @@ You are connected to OutSystems over the MCP HTTP transport. OutSystems is a clo
 
 ## Authenticating
 
-OAuth-protected. The server exposes two MCP tools the agent drives directly:
+OAuth-protected. The server exposes two MCP tools the agent drives directly. Your harness will surface them under its own naming convention — Claude Code prefixes as `mcp__outsystems__authenticate`, Cursor as `mcp_outsystems_authenticate`, others use their own form. The tool names on the wire are:
 
-- `mcp__outsystems__authenticate`: starts the OAuth flow; returns an authorization URL.
-- `mcp__outsystems__complete_authentication { callback_url }`: finalizes auth for remote sessions.
+- `authenticate`: starts the OAuth flow; returns an authorization URL.
+- `complete_authentication { callback_url }`: finalizes auth for remote sessions.
 
-**Lazy.** Before the first OutSystems tool call in a session, call `mcp__outsystems__authenticate` and share the returned URL with the user. Then:
+**Lazy.** Before the first OutSystems tool call in a session, call `authenticate` and share the returned URL with the user. Then:
 
 - **Local session** (browser can reach `http://localhost:<port>/callback`): the server's real tools appear automatically — wait for the user's confirmation, then proceed.
-- **Remote session** (callback page fails to load, e.g. SSH / devcontainer): have the user copy the full URL from their browser's address bar (`http://localhost:<port>/callback?code=...&state=...`) and call `mcp__outsystems__complete_authentication { callback_url: "<that URL>" }`.
+- **Remote session** (callback page fails to load, e.g. SSH / devcontainer): have the user copy the full URL from their browser's address bar (`http://localhost:<port>/callback?code=...&state=...`) and call `complete_authentication { callback_url: "<that URL>" }`.
 
-**Reactive.** On `data.category: "AuthError"` mid-session (token expired, refresh denied, etc.): call `mcp__outsystems__authenticate` again, then retry the original call ONCE.
+**Reactive.** On `data.category: "AuthError"` mid-session (token expired, refresh denied, etc.): call `authenticate` again, then retry the original call ONCE.
 
 **If `authenticate` itself errors** (server unreachable, DCR fails): surface the message verbatim and file against `OutSystems/outsystems-mcp`. Don't speculate about server internals.
 
