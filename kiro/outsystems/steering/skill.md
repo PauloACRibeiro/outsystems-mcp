@@ -47,7 +47,7 @@ OAuth-protected. The harness exposes two deferred tools; the agent drives the fl
 
 **Don't fall back to removing and re-adding the server in Kiro's MCP UI** — the deferred tool pair is always available; UI removal is the host's emergency fallback.
 
-**If `authenticate` itself errors** (proxy unreachable, DCR fails): surface the message verbatim and file against `OutSystems/outsystems-mcp`. Don't speculate about proxy internals.
+**If `authenticate` itself errors** (server unreachable, DCR fails): surface the message verbatim and file against `OutSystems/outsystems-mcp`. Don't speculate about server internals.
 
 ## Tools at a glance
 

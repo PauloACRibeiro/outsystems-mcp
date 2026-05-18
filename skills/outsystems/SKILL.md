@@ -40,7 +40,7 @@ OAuth-protected. The harness exposes two deferred tools; the agent drives the fl
 
 **Don't fall back to the `/mcp -> outsystems -> Authenticate` menu** — the deferred tool pair is always available; the menu is the host's emergency fallback.
 
-**If `authenticate` itself errors** (proxy unreachable, DCR fails): surface the message verbatim and file against `OutSystems/outsystems-mcp`. Don't speculate about proxy internals.
+**If `authenticate` itself errors** (server unreachable, DCR fails): surface the message verbatim and file against `OutSystems/outsystems-mcp`. Don't speculate about server internals.
 
 ## Tools at a glance
 

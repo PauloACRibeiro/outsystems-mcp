@@ -16,7 +16,7 @@ OAuth-protected. The server exposes two MCP tools the agent drives directly:
 
 **Reactive.** On `data.category: "AuthError"` mid-session (token expired, refresh denied, etc.): call `mcp__outsystems__authenticate` again, then retry the original call ONCE.
 
-**If `authenticate` itself errors** (proxy unreachable, DCR fails): surface the message verbatim and file against `OutSystems/outsystems-mcp`. Don't speculate about proxy internals.
+**If `authenticate` itself errors** (server unreachable, DCR fails): surface the message verbatim and file against `OutSystems/outsystems-mcp`. Don't speculate about server internals.
 
 ## Tools at a glance
 
