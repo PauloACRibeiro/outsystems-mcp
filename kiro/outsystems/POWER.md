@@ -10,9 +10,9 @@ author: "OutSystems AI Platform"
 
 ## Overview
 
-OutSystems is a cloud-native low-code platform where apps are built from OML (OutSystems Model Language) — a binary format describing entities, screens, actions, and logic. This Power connects Kiro to the **OutSystems MCP server**: a hosted, multi-tenant HTTP transport that exposes the full OutSystems tool surface (`mentor`, `app_*`, `context_*`, `deploy_*`, `publish_*`, `extlib_*`, `env_*`).
+OutSystems is a cloud-native low-code platform where apps are built from OML (OutSystems Model Language) — a binary format describing entities, screens, actions, and logic. This Power connects Kiro to the **OutSystems MCP server**: a hosted, multi-tenant HTTP transport that exposes the full OutSystems tool surface (`mentor_*`, `app_*`, `context_*`, `deploy_*`, `publish_*`, `extlib_*`, `env_*`).
 
-There is no CLI to install. There is no OML on disk. OML stays server-side; you edit through the `mentor` session and ship via `publish_start`.
+There is no CLI to install. There is no OML on disk. OML stays server-side; you edit through the mentor flow (`mentor_start` → poll `mentor_get_run`) and ship via `publish_start`.
 
 ## Onboarding
 
@@ -28,6 +28,8 @@ There is no CLI to install. There is no OML on disk. OML stays server-side; you 
 This Power doesn't ship its own MCP server config. The first time you ask Kiro Chat to do something with OutSystems, the agent will notice no `outsystems` MCP server is registered, ask you for your tenant hostname, and add an entry to Kiro's user-level `~/.kiro/settings/mcp.json`. No script, no shell command. Just install the Power and start chatting.
 
 Two ways to install the Power into Kiro:
+
+Both snippets below omit `iconUrl` — the Power installs but shows no logo in Kiro's Powers UI. To enable the logo, add `"iconUrl": "data:image/png;base64,<base64-encoded contents of kiro/outsystems/icon.png>"` to the registry JSON (Kiro's webview CSP blocks `file://`, so a data URL is required). Encode with `base64 -w0` on Linux or `base64 -i` on macOS.
 
 **Option A - clone locally, point Kiro at the local copy.** Most deterministic; doesn't depend on Kiro shelling out to git.
 
@@ -52,7 +54,7 @@ cat > ~/.kiro/powers/registries/outsystems.json <<EOF
 EOF
 ```
 
-**Option B - let Kiro clone the repo itself.** Simpler if your `git` credentials are configured (HTTPS via `gh auth setup-git` or SSH agent).
+**Option B - let Kiro clone the repo itself.** Simpler; works over anonymous HTTPS.
 
 ```bash
 mkdir -p ~/.kiro/powers/registries
@@ -101,8 +103,8 @@ Workflows below show MCP tool form. Identity (tenant + user) is derived from the
 
 ### Workflow 2: Edit an app and ship it
 
-1. `mentor { app_key: "<key>", prompt: "Add a due date field to Task" }` → returns `mentor_session_id`, `mentor_session_token`, `summary`, `events`.
-2. (Optional) Follow-up turns: `mentor { mentor_session_id, mentor_session_token, prompt: "..." }`. Each turn returns a fresh token; use the latest.
+1. `mentor_start { app_key: "<key>", prompt: "Add a due date field to Task" }` → returns `runId`. Poll `mentor_get_run { runId, cursor }` until terminal; pull `mentor_session_id` + `mentor_session_token` out of `result`.
+2. (Optional) Follow-up turns: `mentor_start { mentor_session_id, mentor_session_token, prompt: "..." }` and poll the same way. Each terminal result returns a fresh token; use the newest one next.
 3. `publish_start { mentor_session_id, mentor_session_token, env_key: "<env>" }` → returns `publication_id`.
 4. Poll `publish_status { publication_id }` until terminal. On failure, `publish_logs { pub_key: publication_id }`.
 
@@ -120,7 +122,7 @@ Workflows below show MCP tool form. Identity (tenant + user) is derived from the
 
 ## Conventions
 
-- **OML is server-side.** No `app_download`. Use `app_refs` + `context_*` for inspection; `mentor` for edits.
+- **OML is server-side.** No `app_download`. Use `app_refs` + `context_*` for inspection; the mentor flow (`mentor_start` → poll `mentor_get_run`) for edits.
 - **No selected environment.** Every environment-scoped tool takes `env_key` per call.
 - **Operations return immediately.** `deploy_start`, `deploy_rollback`, `deploy_impact`, `publish_start`, `extlib_upload`, `extlib_publish`, `extlib_download_source` all return an operation/publication/analysis id; poll the matching `*_status` tool.
 - **Never invent IDs.** App keys, env keys, build keys, operation keys are opaque. Resolve them via `app_list`, `env_list`, etc., or ask the user.
