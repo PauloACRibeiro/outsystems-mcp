@@ -1,44 +1,20 @@
----
-name: outsystems
-description: "OutSystems over MCP. Edit apps, publish, deploy, search tenant elements, manage external libraries. Use for ANY OutSystems task."
----
-
 # OutSystems - Remote MCP
 
 You are connected to OutSystems over the MCP HTTP transport. OutSystems is a cloud-native low-code platform where apps are built from OML (OutSystems Model Language), a binary format describing entities, screens, actions, and logic. Every tool call carries the harness's validated OAuth bearer; tenant + user identity are derived from the JWT, not from arguments.
 
-## First use / setup
-
-If the `outsystems` MCP tools aren't visible in your toolset, or a call returns `tenant not configured` / connection errors, the MCP server hasn't been registered against the user's tenant. Do this once per machine:
-
-1. **Ask the user for their OutSystems tenant hostname.** Format: `<tenant>.outsystems.dev` (e.g. `mycompany.outsystems.dev`, `mytenant.outsystems.dev`). The tenant slug is whatever the user chose; do not assume a fixed `<short>-<region>-<index>` pattern. Prompt verbatim:
-   > "Which OutSystems tenant should I connect to? It's the host portion of your OutSystems URL, typically something like `mycompany.outsystems.dev`."
-2. **Normalize, then validate.** Accept whatever the user gives you (URL, hostname, hostname-with-path). Strip the scheme (`https://`, `http://`), any leading `www.`, trailing slash, and any path or query — keep only the host. The result must match `^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`. Only ask again if the normalized value is still implausible (empty, contains whitespace, or clearly isn't a hostname).
-3. **Construct the MCP URL**: `https://<TENANT>/mcp`.
-4. **Register the server.** Run:
-   ```
-   claude mcp add -s user --transport http --client-id service_studio --callback-port 7890 outsystems <URL>
-   ```
-5. **Authenticate.** Proceed to the "Authenticating" section below. The agent drives auth via tool calls; the user does NOT click anything in `/mcp`.
-6. **Retry the user's original request** once authentication completes.
-
-If the user already has an `outsystems` MCP server registered but pointing at the wrong tenant, follow the same flow. The patches are idempotent for the same tenant and update the URL for a new one.
-
 ## Authenticating
 
-OAuth-protected. The harness exposes two deferred tools; the agent drives the flow — the user does NOT run `/mcp -> outsystems -> Authenticate` manually.
+OAuth-protected. The server exposes two MCP tools the agent drives directly. Your harness will surface them under its own naming convention — Claude Code prefixes as `mcp__outsystems__authenticate`, Cursor as `mcp_outsystems_authenticate`, others use their own form. The tool names on the wire are:
 
-- `mcp__outsystems__authenticate`: starts the OAuth flow; returns an authorization URL.
-- `mcp__outsystems__complete_authentication { callback_url }`: finalizes auth for remote sessions.
+- `authenticate`: starts the OAuth flow; returns an authorization URL.
+- `complete_authentication { callback_url }`: finalizes auth for remote sessions.
 
-**Lazy.** Before the first OutSystems tool call in a session, call `mcp__outsystems__authenticate` and share the returned URL with the user. Then:
+**Lazy.** Before the first OutSystems tool call in a session, call `authenticate` and share the returned URL with the user. Then:
 
 - **Local session** (browser can reach `http://localhost:<port>/callback`): the server's real tools appear automatically — wait for the user's confirmation, then proceed.
-- **Remote session** (callback page fails to load, e.g. SSH / devcontainer): have the user copy the full URL from their browser's address bar (`http://localhost:<port>/callback?code=...&state=...`) and call `mcp__outsystems__complete_authentication { callback_url: "<that URL>" }`.
+- **Remote session** (callback page fails to load, e.g. SSH / devcontainer): have the user copy the full URL from their browser's address bar (`http://localhost:<port>/callback?code=...&state=...`) and call `complete_authentication { callback_url: "<that URL>" }`.
 
-**Reactive.** On `data.category: "AuthError"` mid-session (token expired, refresh denied, etc.): call `mcp__outsystems__authenticate` again, then retry the original call ONCE.
-
-**Don't fall back to the `/mcp -> outsystems -> Authenticate` menu** — the deferred tool pair is always available; the menu is the host's emergency fallback.
+**Reactive.** On `data.category: "AuthError"` mid-session (token expired, refresh denied, etc.): call `authenticate` again, then retry the original call ONCE.
 
 **If `authenticate` itself errors** (server unreachable, DCR fails): surface the message verbatim and file against `OutSystems/outsystems-mcp`. Don't speculate about server internals.
 
