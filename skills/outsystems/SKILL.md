@@ -92,7 +92,7 @@ Mentor is a multi-turn conversation backed by a server-side session that holds t
 **Pacing polls:**
 
 - Poll `mentor_get_run` **immediately** after `mentor_start`, and again immediately while the cursor advances — mentor events are cursor-paged and arrive in batches.
-- Pause only when the cursor is drained and `status` isn't terminal. **~30s is a reference for mentor**, not a target — without one Claude drifts to 60–180s. `publish_status` / `deploy_status` / `extlib_status` finish faster; **5–15s** is fine for those.
+- Pause only when the cursor is drained and `status` isn't terminal. **~30s is a reference for mentor**, not a target — without one, agents tend to drift to 60–180s. `publish_status` / `deploy_status` / `extlib_status` finish faster; **5–15s** is fine for those.
 
 **When to use the mentor flow vs `context_*`:**
 - For *info* about an app, prefer `context_*`. Lightweight, structured, no OML download. Only fall back to mentor when context can't answer (deep OML internals, logic flow traversal).
