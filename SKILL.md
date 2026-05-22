@@ -49,7 +49,7 @@ Cross-tool behaviors not expressible in a single per-tool description:
 - **Parallelize independent calls** (e.g. once you have an app key, fetch `app_info` + the per-type `context_*` lookups concurrently).
 - **Use `data.category`, not message text, for error retry decisions.** Categories: `AuthError`, `ValidationError`, `UpstreamError`, `InternalError`; upstream errors also carry `data.upstream_status`.
 - **Long-running tools return an id; poll for status.** Applies to all `deploy_*` (status via `deploy_status` / `deploy_impact_status`), `publish_start` (via `publish_status`), `extlib_*` operations (via `extlib_status` / `extlib_download_status`), and mentor (`mentor_start` returns a `runId`; poll `mentor_get_run` until terminal; `mentor_cancel` to abort). Per-tool polling shape is in each tool's live description.
-- **Don't bare-sleep between polls.** Bare `sleep N` is blocked by Claude Code (and likely other harnesses). Use background-sleep — Claude Code: `Bash {command: "sleep 30", run_in_background: true}`, **then end your turn**; the harness re-invokes you on completion. Calling the next tool right after a background sleep returns synchronously = no pacing. (`Monitor` works for shell-checkable conditions; MCP polls aren't.) See "Pacing polls" under Mentor for cadence and the cursor pattern.
+- **Don't bare-sleep between polls.** Bare `sleep N` is blocked by many harnesses as a context-burning idle wait. Use your harness's background-task / background-sleep mechanism, **then end your turn**; the harness re-invokes you on completion. Calling the next tool right after a background sleep returns synchronously = no pacing. See "Pacing polls" under Mentor for cadence and the cursor pattern.
 
 ## Names
 
