@@ -73,6 +73,7 @@ Cross-tool behaviors not expressible in a single per-tool description:
 - **Parallelize independent calls** (e.g. once you have an app key, fetch `app_info` + the per-type `context_*` lookups concurrently).
 - **Use `data.category`, not message text, for error retry decisions.** Categories: `AuthError`, `ValidationError`, `UpstreamError`, `InternalError`; upstream errors also carry `data.upstream_status`.
 - **Long-running tools return an id; poll for status.** Applies to all `deploy_*` (status via `deploy_status` / `deploy_impact_status`), `publish_start` (via `publish_status`), `extlib_*` operations (via `extlib_status` / `extlib_download_status`), and mentor (`mentor_start` returns a `runId`; poll `mentor_get_run` until terminal; `mentor_cancel` to abort). Per-tool polling shape is in each tool's live description.
+- **Don't bare-sleep between polls.** Bare `sleep N` is blocked by many harnesses as a context-burning idle wait. Use your harness's background-task / background-sleep mechanism, **then end your turn**; the harness re-invokes you on completion. Calling the next tool right after a background sleep returns synchronously = no pacing. See "Pacing polls" under Mentor for cadence and the cursor pattern.
 
 ## Names
 
@@ -87,6 +88,11 @@ Mentor is a multi-turn conversation backed by a server-side session that holds t
 - The refreshed `mentor_session_token` only appears in the terminal `mentor_get_run.result` (alongside `mentor_session_id`, `summary`, and `events`). Use the newest token on the next start.
 - Sessions auto-GC after 30 min idle. Resuming after GC transparently re-downloads the OML; same `mentor_session_id` and conversation continue.
 - To call `publish_start` on the edited OML you need `mentor_session_id` + `mentor_session_token` from the most recent terminal-success `mentor_get_run.result`.
+
+**Pacing polls:**
+
+- Poll `mentor_get_run` **immediately** after `mentor_start`, and again immediately while the cursor advances — mentor events are cursor-paged and arrive in batches.
+- Pause only when the cursor is drained and `status` isn't terminal. **~30s is a reference for mentor**, not a target — without one, agents tend to drift to 60–180s. `publish_status` / `deploy_status` / `extlib_status` finish faster; **5–15s** is fine for those.
 
 **When to use the mentor flow vs `context_*`:**
 - For *info* about an app, prefer `context_*`. Lightweight, structured, no OML download. Only fall back to mentor when context can't answer (deep OML internals, logic flow traversal).
