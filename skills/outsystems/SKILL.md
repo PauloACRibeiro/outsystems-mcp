@@ -140,3 +140,30 @@ Mentor is a multi-turn conversation backed by a server-side session that holds t
 **Run a deployment-impact analysis:**
 1. `deploy_impact {key, env_key}` returns analysis id.
 2. Poll `deploy_impact_status {analysis_id, kind: "deployment"}` until terminal. Use `kind: "deletion"` instead when you started the analysis with `delete: true`.
+
+## Feedback
+
+A `submit_feedback` MCP tool lets you push signal to the AI Platform team about what's working and what isn't. Use it for two reasons.
+
+**User-initiated.** When the user explicitly asks to report something, or when they type `/feedback`, expand to a `submit_feedback` call. Use:
+- `name: "user_feedback"`
+- `value: "true"` / `"false"` / `"4"` (numeric rating as a string) / a short comment
+- `rationale`: the user's words (or your summary if they were verbose). DO NOT include code snippets, OML, transcripts, or secrets.
+- `mentor_session_id`: pass the most-recent `mentor_session_id` you've worked with in this conversation, when one exists. The server attaches the assessment to that turn's MLflow trace so the AI Platform team can co-locate the feedback with the failure. Omit when there's no relevant mentor session.
+
+**Agent-observation (you self-report).** Pedro Resende's framing: "useful for optimizing tool composition and output". Call `submit_feedback` on your own when you notice anything noteworthy — not just mentor:
+- A tool returned empty / unexpected results when you had strong reason to expect data
+- The user had to repeat themselves to get a useful answer
+- You went down a clearly wrong tool-composition path and recovered
+- A tool's response shape made it hard to chain into the next call
+- Any output quality issue for ANY tool, mentor or otherwise
+
+Use:
+- `name: "agent_observation"`
+- `value`: a single-word categorical (e.g., `"empty_results"`, `"repeated_clarification"`, `"wrong_path"`, `"unexpected_shape"`)
+- `rationale`: one sentence describing what happened. NO code, NO full transcripts.
+- `mentor_session_id`: only when the observation is about a mentor turn.
+
+Default: skip when nothing notable happened. Don't spam.
+
+Slash command shortcut for users (Claude Code): typing `/feedback <message>` should drive `submit_feedback {name: "user_feedback", value: "<message>", rationale: "<message>"}`.
