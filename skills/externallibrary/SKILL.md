@@ -112,6 +112,34 @@ void ProcessData(
 );
 ```
 
+### Optional Parameters
+
+To make a server action parameter optional in ODC, the C# parameter **must** be both nullable **and** have a default value of `null`. Making a parameter nullable alone is not sufficient — ODC will still treat it as mandatory unless a default value is also assigned.
+
+```csharp
+// In interface:
+[OSAction(Description = "Sends a notification")]
+void SendNotification(
+    [OSParameter(Description = "Recipient address")] string recipient,
+    [OSParameter(Description = "Optional message subject")] string? subject = null,
+    [OSParameter(Description = "Optional priority level")] int? priority = null
+);
+
+// In implementation:
+public void SendNotification(string recipient, string? subject = null, int? priority = null)
+{
+    var resolvedSubject = subject ?? "No Subject";
+    var resolvedPriority = priority ?? 0;
+    // ...
+}
+```
+
+**Rules:**
+- The parameter type must be nullable: `string?`, `int?`, `bool?`, `decimal?`, etc.
+- The parameter must have `= null` as the default value in both the interface and the implementation.
+- `byte[]?` (Binary Data) and struct types decorated with `[OSStructure]` can also be made optional the same way.
+- `out` parameters cannot be optional.
+
 ### `[OSStructure]` – Exposes a struct as an ODC Structure
 Applied to a **public struct** (not class). Used for complex input/output types.
 
