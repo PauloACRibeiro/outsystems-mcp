@@ -54,7 +54,7 @@ OAuth-protected. The harness exposes two deferred tools; the agent drives the fl
 
 Tool catalog and per-tool semantics live in the MCP server's `tools/list`; treat each tool's `description` + `inputSchema` as the source of truth, since defaults can change server-side. Tools group as:
 
-- **Apps**: `app_list`, `app_info`, `app_refs`
+- **Apps**: `app_list`, `app_info`, `app_refs`, `app_revisions`
 - **Context Service** (seven typed lookups): `context_entities`, `context_actions`, `context_screens`, `context_structures`, `context_roles`, `context_themes`, `context_connections`
 - **Mentor** (server-side OML editing): `mentor_start`, `mentor_get_run`, `mentor_cancel`
 - **Publish**: `publish_start`, `publish_status`, `publish_logs`
@@ -75,9 +75,10 @@ Cross-tool behaviors not expressible in a single per-tool description:
 
 - **Agent-facing tools.** Don't expose raw tool output; extract the relevant fields and present them naturally.
 - **Go straight to the task.** No setup checks, no auth pre-flight beyond the lazy `authenticate` described above; identity comes from the harness-negotiated bearer.
-- **OML stays server-side.** No `app_download`. Inspect with `app_refs` + `context_*`; edit with the mentor flow (`mentor_start` → poll `mentor_get_run`). The OML lives in the server-side mentor session and never crosses the wire as bytes.
+- **OML stays server-side.** No `app_download`. Inspect with `app_refs` + `context_*`; edit with the mentor flow (`mentor_start` → poll `mentor_get_run`). The OML lives in the server-side mentor session and never crosses the wire as bytes. When a user asks for the OML on disk, say plainly that the remote MCP transport does not expose a file-to-local-disk download (the server has no local filesystem to write to), and where useful offer the partially answerable portion (e.g. `app_revisions` for the latest version number).
 - **Never guess opaque IDs.** If `env_key`, `app_key`, an asset key, or a `mentor_session_*` token is missing and you can't resolve it, ask the user.
-- **No selected environment.** Every environment-scoped tool takes `env_key` per call.
+- **No selected environment.** Every environment-scoped tool takes `env_key` per call; the transport is stateless by design. When a user asks for a session-persistent `env select` style toggle, say so explicitly rather than refusing silently, and reframe the request so they pass `env_key` per call.
+- **No local CWD.** The server has no view of the caller's filesystem. When a user asks about local paths, working directories, or CWD-relative artifacts, state the limit plainly and surface the closest server-side data inline (e.g. paste the `env_list` payload back so the user can save it themselves) instead of attempting the operation. Don't silently route a write or a read through a non-MCP tool; the architectural fact has to reach the user.
 - **Parallelize independent calls** (e.g. once you have an app key, fetch `app_info` + the per-type `context_*` lookups concurrently).
 - **Use `data.category`, not message text, for error retry decisions.** Categories: `AuthError`, `ValidationError`, `UpstreamError`, `InternalError`; upstream errors also carry `data.upstream_status`.
 - **Long-running tools return an id; poll for status.** Applies to all `deploy_*` (status via `deploy_status` / `deploy_impact_status`), `publish_start` (via `publish_status`), `extlib_*` operations (via `extlib_status` / `extlib_download_status`), and mentor (`mentor_start` returns a `runId`; poll `mentor_get_run` until terminal; `mentor_cancel` to abort). Per-tool polling shape is in each tool's live description.
