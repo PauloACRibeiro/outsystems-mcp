@@ -88,6 +88,12 @@ Cross-tool behaviors not expressible in a single per-tool description:
 - `name` is the display form (may contain spaces, e.g. `"AI Agent Feedback Portal"`); `assetName` is the internal identifier (e.g. `"AIAgentFeedbackPortal"`). The `app:` parameter on `context_*` and `app_list --search` accepts either — case-insensitive substring match against both the display name and its space-stripped variant.
 - The canonical identifier is the **asset key** (UUID). Prefer it across calls; names can be edited, the key is stable.
 
+## Answering
+
+When you report on a tenant object that you looked up in this conversation — an application, environment, external library, deployment operation, the tenant binding itself — surface the canonical identifier alongside the human-readable name: asset key (UUID) for apps and external libraries, `env_key` for environments, operation key for deployments, tenant hostname for the tenant. The identifier is the stable reference the user needs to act on the result; names are ambiguous when two objects share one. This extends `## Names` (stable-key preference across calls) to the user-facing answer.
+
+The rule fires when the agent did the lookup itself in this conversation **or** a follow-up action is plausible. Pure confirmation answers ("logged in", "yes that ran") can omit the identifier, and so can hand-back of an ID the user already typed.
+
 ## Mentor session round-trip
 
 Mentor is a multi-turn conversation backed by a server-side session that holds the loaded OML. Driven via the async surface — `mentor_start` opens a run, `mentor_get_run` polls progress, `mentor_cancel` aborts. Per-call args, response shape, polling cadence, cursor semantics, and error codes are in each tool's live `description` + `inputSchema`.
