@@ -122,8 +122,9 @@ Workflows below show MCP tool form. Identity (tenant + user) is derived from the
 
 ## Conventions
 
-- **OML is server-side.** No `app_download`. Use `app_refs` + `context_*` for inspection; the mentor flow (`mentor_start` → poll `mentor_get_run`) for edits.
-- **No selected environment.** Every environment-scoped tool takes `env_key` per call.
+- **OML is server-side.** No `app_download`. Use `app_refs` + `context_*` for inspection; the mentor flow (`mentor_start` → poll `mentor_get_run`) for edits. When a user asks for the OML on disk, say plainly that the remote MCP transport does not expose a file-to-local-disk download (the server has no local filesystem to write to), and where useful offer the partially answerable portion (e.g. `app_revisions` for the latest version number).
+- **No selected environment.** Every environment-scoped tool takes `env_key` per call; the transport is stateless by design. When a user asks for a session-persistent `env select` style toggle, say so explicitly rather than refusing silently, and reframe the request so they pass `env_key` per call.
+- **No local CWD.** The server has no view of the caller's filesystem. When a user asks about local paths, working directories, or CWD-relative artifacts, state the limit plainly and surface the closest server-side data inline (e.g. paste the `env_list` payload back so the user can save it themselves) instead of attempting the operation. Don't silently route a write or a read through a non-MCP tool; the architectural fact has to reach the user.
 - **Operations return immediately.** `deploy_start`, `deploy_rollback`, `deploy_impact`, `publish_start`, `extlib_upload`, `extlib_publish`, `extlib_download_source` all return an operation/publication/analysis id; poll the matching `*_status` tool.
 - **Never invent IDs.** App keys, env keys, build keys, operation keys are opaque. Resolve them via `app_list`, `env_list`, etc., or ask the user.
 
