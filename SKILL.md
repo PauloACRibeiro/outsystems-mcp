@@ -2,7 +2,7 @@
 
 You are connected to OutSystems over the MCP HTTP transport. OutSystems is a cloud-native low-code platform where apps are built from OML (OutSystems Model Language), a binary format describing entities, screens, actions, and logic. Every tool call carries the harness's validated OAuth bearer; tenant + user identity are derived from the JWT, not from arguments.
 
-**Before your first OutSystems call**, read the live `tools/list`. This skill names domains, not tools — names, parameters, and defaults can change server-side, and the server is the source of truth.
+**Once authenticated and the server's tools are visible**, read the live `tools/list` before your first non-auth OutSystems operation. This skill names domains, not tools — names, parameters, and defaults can change server-side, and the server is the source of truth. (Authenticating is the one exception: drive the auth flow first, as described below.)
 
 ## Authenticating
 
@@ -43,9 +43,9 @@ Cross-tool behaviors not expressible in a single per-tool description:
 
 ## Rules
 
-- **Read `tools/list` before your first call.** This skill names domains; the server names tools.
+- **Read `tools/list` before your first non-auth call.** This skill names domains; the server names tools. (Auth comes first; see Authenticating.)
 - **Agent-facing tools.** Don't expose raw tool output; extract the relevant fields and present them naturally.
-- **Go straight to the task.** No setup checks, no auth pre-flight beyond the lazy `authenticate` described above; identity comes from the harness-negotiated bearer.
+- **Go straight to the task.** No setup checks, no auth pre-flight beyond the lazy authentication step described above; identity comes from the harness-negotiated bearer.
 - **Confirm before tenant-state mutations.** Before invoking any tool that can change tenant state, restate the planned change to the user and wait for explicit confirmation. Skip the prompt only when the user has already authorised this specific change in the current turn. A generic "go ahead with the task" earlier in the conversation is not authorisation for a specific destructive call. The destructive actions are: starting or rolling back a deployment, running a deployment-impact analysis, publishing OML, uploading/publishing/deleting an external library, and creating an app. Read-only and inert local-mutating tools are unaffected: listing or inspecting apps, the context lookups, any status/logs/messages poll, enumerating environments, and listing deployments. Editing in a mentor session changes only the in-memory mentor OML, not deployed tenant assets, so it does not require confirmation. The MCP host's own `destructiveHint` prompt is a backstop, not a substitute: this rule applies on every host regardless of whether the host gates on the hint.
 - **OML stays server-side.** There is no download tool. Inspect an app through its references and the context lookups; edit it through the mentor flow (start a mentor run, then poll it until terminal). The OML lives in the server-side mentor session and never crosses the wire as bytes. When a user asks for the OML on disk, say plainly that the remote MCP transport does not expose a file-to-local-disk download (the server has no local filesystem to write to), and where useful offer the partially answerable portion (e.g. the app's revision history for the latest version number).
 - **Never guess opaque IDs.** If `env_key`, `app_key`, an asset key, or a `mentor_session_*` token is missing and you can't resolve it, ask the user.
